@@ -11,7 +11,7 @@
  */
 
 /**
- rule规则，规则三部分组成  规则别名，规则详情，规则信息提示【未通过，通过，为空提示】
+ rule规则，规则三部分组成  规则别名，规则详情，规则信息提示【未通过，为空提示，通过】
   用户自行在config中以name为key进行的索引rule规则：
    --- 可以是一个字符串，如果是字符串，包含内容必须是内置规则名，可以是多个规则的组合
    --- 可以是一个对象，对象的key为rule别名，value为一个数组，规则详情，规则信息提示
@@ -28,7 +28,7 @@ define(function(require, exports) {
   msgClass = ['s-succ', 's-warn', 's-error', ''];
   status = ['normal', 'posting', 'posted'];
   pass = ['passed', 'noPass'];
-  msgTip = ['{{label}}通过检测', '请{{verb}}{{label}}'];
+  msgTip = ['{{label}}通过检测', '请{{verb}}{{label}}', '{{label}}不合格式要求'];
   logFn = ['error', 'log', 'warn'];
   rNumber = /^[012]$/;
   rClass = /\bs\-(succ|warn|error)\b/g;
@@ -110,9 +110,11 @@ define(function(require, exports) {
     return this;
   };
 
-  /*获取表单项信息  type表示状态值 0 -> 成功   1 -> 空值信息  2 -> 错误信息 暂时不做成功多个提示信息 */
+  /*获取表单项信息  type表示状态值 0 -> 成功   1 -> 空值信息  2 -> 错误信息
+  		查询顺序：行内各种提示信息 -> 别名提示信息  -> 默认错误提示  -> 内置别名提示  -> 默认提示
+   */
   Validate.prototype.getMsg = function(obj, type, alias, tipType) {
-    var msgKey, _msg, _msgPrefix, _name;
+    var E, e, msgKey, _msg, _msgPrefix, _name;
     _msg = void 0;
     if (!rNumber.test(type) || +tipType === 1) {
       return _msg;
@@ -125,7 +127,18 @@ define(function(require, exports) {
     _msg = obj.attr(msgKey);
     if (!_msg) {
       _name = obj.attr('name');
-      _msg = this.settings[_name] && (this.settings[_name][alias][1] || this.settings[_name][_msgPrefix]) || (type < 2 ? msgTip[type] : buildRule[alias][1]);
+      try {
+        _msg = this.settings[_name][alias][3 - type];
+      } catch (_error) {
+        e = _error;
+        try {
+          _msg = this.settings[_name][msgKey];
+        } catch (_error) {
+          E = _error;
+          _msg = buildRule[alias][3 - type];
+        }
+      }
+      _msg || (_msg = msgTip[type]);
     }
     _msg = Validate.tool.parseMsg.call(this, _msg, obj);
     obj.attr(msgKey, _msg);
@@ -134,33 +147,18 @@ define(function(require, exports) {
 
   /*获取提示信息显示位置  1  将当前input变色  2  在当前表单项中加上  3  弹框显示   字符串，指定显示位置的选择器 */
   Validate.prototype.getTipType = function(obj) {
-    var name, tipType;
+    var name;
     obj = Validate.tool.parseObj(obj, this.form).eq(0);
     name = obj.attr('name');
-    return tipType = obj.attr('tipType') || this.settings[name] && this.settings[name].tipType || this.settings.tipType || 1;
+    return obj.attr('tipType') || this.settings[name] && this.settings[name].tipType || this.settings.tipType || 1;
   };
 
   /* type  表示状态值 0 -> 成功   1 -> 空值信息  2 -> 错误信息 3-> 隐藏提示信息 */
   Validate.prototype.showMsg = function(obj, msg, type, tipType) {
-    var msgPlace, newClassName, oldClassName, par;
+    var msgPlace, par;
     obj = Validate.tool.parseObj(obj, this.form);
-    if (+tipType === 1) {
-      oldClassName = obj.attr('class') || '';
-      newClassName = $.trim(oldClassName.replace(rClass, '') + ' ' + msgClass[type]);
-      return obj.attr('class', newClassName);
-    } else if (+tipType === 2) {
-      par = obj.parents('.form-item');
-      msgPlace = par.find('.input-msg');
-      if (!msgPlace.length) {
-        msgPlace = $('<span class="input-msg"/>').appendTo(par);
-      }
-      oldClassName = msgPlace.attr('class') || '';
-      if (rClass.test(oldClassName) || /1|2/.test(type)) {
-        newClassName = $.trim(oldClassName.replace(rClass, '') + ' ' + msgClass[type]);
-        return msgPlace.text(msg).attr('class', newClassName);
-      }
-    } else if (+tipType === 3) {
-      return require.async('lib/layer/layer', function(layer) {
+    if (+tipType === 3) {
+      require.async('lib/layer/layer', function(layer) {
         return layer.alert({
           'title': '表单校验提示',
           cont: {
@@ -169,16 +167,22 @@ define(function(require, exports) {
           }
         });
       });
+      return this;
+    }
+    if (+tipType === 1) {
+      msgPlace = obj;
+    } else if (+tipType === 2) {
+      par = obj.parents('.form-item');
+      msgPlace = par.find('.input-msg');
+      if (!msgPlace.length) {
+        msgPlace = $('<span class="input-msg"/>').appendTo(par);
+      }
     } else {
       msgPlace = $(tipType + ':eq(0)');
-      if (msgPlace.length) {
-        oldClassName = msgPlace.attr('class') || '';
-        if (rClass.test(oldClassName) || /1|2/.test(type)) {
-          newClassName = $.trim(oldClassName.replace(rClass, '') + ' ' + msgClass[type]);
-          return msgPlace.text(msg).attr('class', newClassName);
-        }
-      }
     }
+    Validate.tool.parseTipClass(msgPlace, type);
+    +tipType !== 1 && msgPlace.text(msg);
+    return this;
   };
 
   /*检测 */
@@ -195,7 +199,7 @@ define(function(require, exports) {
     if (obj.attr('ignore') === 'ignore' && !val || obj.data('lastVal') === val || obj.is(':hidden') && self.settings.ignoreHidden) {
       self.settings.debug && console.log(obj.attr('name') + ' 通过检测;timestamp:' + Date.now());
       return true;
-    } else if (!val && (obj.attr('showNull') || self.settings.showNull)) {
+    } else if (!val || (obj.is('select') && +val === -1) && (obj.attr('showNull') || self.settings.showNull)) {
       self.pass(obj, 1);
 
       /*如果为空，需要判断是否显示空的提示，并且需要判断是否全部显示 */
@@ -331,8 +335,8 @@ define(function(require, exports) {
             return result;
           }
         }
-      } else if (typeof alias === 'object') {
-        return _alias;
+      } else {
+        return reg;
       }
     },
 
@@ -374,6 +378,15 @@ define(function(require, exports) {
         rule = null;
       }
       return rule;
+    },
+    parseTipClass: function(obj, type) {
+      var newClassName, oldClassName;
+      if (rClass.test(oldClassName) || /1|2/.test(type)) {
+        oldClassName = obj.attr('class') || '';
+        newClassName = $.trim(oldClassName.replace(rClass, '')) + ' ' + msgClass[type];
+        obj.attr('class', newClassName);
+      }
+      return obj;
     },
 
     /*解析消息  将基本的占位符替换 */
