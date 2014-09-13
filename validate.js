@@ -56,12 +56,15 @@ define(function(require, exports) {
     self.form.on(self.settings.trigger + '.validate', '[check]', function() {
       return self.check($(this));
     });
+    self.form.on('submit', function() {
+      return self.submitForm();
+    });
     if (!$(self.settings.submit).length) {
       self.settings.submit = ':submit';
     }
     self.form.on('click.validate', self.settings.submit, function(e) {
       e.preventDefault();
-      return self.submitForm();
+      return self.form.trigger('submit');
     });
     return this;
   };
@@ -115,7 +118,7 @@ define(function(require, exports) {
    */
   Validate.prototype.getMsg = function(obj, type, alias, tipType) {
     var E, e, msgKey, _msg, _msgPrefix, _name;
-    _msg = void 0;
+    _msg = '';
     if (!rNumber.test(type) || +tipType === 1) {
       return _msg;
     }
@@ -135,7 +138,7 @@ define(function(require, exports) {
           _msg = this.settings[_name][msgKey];
         } catch (_error) {
           E = _error;
-          _msg = buildRule[alias][3 - type];
+          _msg = buildRule[alias] && buildRule[alias][3 - type];
         }
       }
       _msg || (_msg = msgTip[type]);
@@ -187,7 +190,7 @@ define(function(require, exports) {
 
   /*检测 */
   Validate.prototype.check = function(obj) {
-    var msg, name, passed, reg, result, self, tipType, type, val;
+    var msg, name, reg, result, self, tipType, type, val;
     self = this;
     type = obj.attr('type');
     if (/button|rest|submit|file/.test(type)) {
@@ -199,51 +202,52 @@ define(function(require, exports) {
     if (obj.attr('ignore') === 'ignore' && !val || obj.data('lastVal') === val || obj.is(':hidden') && self.settings.ignoreHidden) {
       self.settings.debug && console.log(obj.attr('name') + ' 通过检测;timestamp:' + Date.now());
       return true;
-    } else if (!val || (obj.is('select') && +val === -1) && (obj.attr('showNull') || self.settings.showNull)) {
-      self.pass(obj, 1);
+    }
+    name = obj.attr('name');
 
-      /*如果为空，需要判断是否显示空的提示，并且需要判断是否全部显示 */
-      tipType = self.getTipType(obj);
-      self.settings.debug && console.error(obj.attr('name') + ' 未通过检测; 原因:未填写内容; timestamp:' + Date.now());
-      self.showMsg(obj, self.getMsg(obj, 1, null, tipType), 1, tipType);
-      passed = 1;
-    } else if (val) {
-      name = obj.attr('name');
-      obj.data('lastVal', val);
-
-      /*用户自定义检测函数,并且返回检测结果 */
-      if (self.settings[name] && $.isFunction(self.settings[name]['check'])) {
-        passed = !self.settings[name]['check'].call(self, self.settings[name], val, obj, buildRule);
+    /*用户自定义检测函数,并且返回检测结果 */
+    if (self.settings[name] && $.isFunction(self.settings[name]['check'])) {
+      result = self.settings[name]['check'].call(self, val, obj, buildRule);
+      val = self.getVal(obj, obj.is(':password') ? false : true);
+      try {
+        result.passed;
+      } catch (_error) {
+        result = {
+          passed: result,
+          alias: ''
+        };
+      }
+    } else {
+      if (!val || obj.is('select') && +val === -1) {
+        result = {
+          passed: false
+        };
       } else {
         reg = self.getReg(obj);
         result = Validate.tool.check.call(self, reg, val, obj);
-        tipType = self.getTipType(obj);
-        if (result.passed) {
-          passed = 0;
-        } else {
-          passed = 2;
-        }
-        self.pass(obj, passed);
-        if (obj.attr('ajaxurl') && !passed) {
-          return true;
-        }
-        if (passed === 0 && !(obj.attr('showSucc') || self.settings.showSucc)) {
-          msg = '';
-          passed = 3;
-        } else if (obj.attr('rcheck')) {
-
-          /*TODO 需要兼容提示两次不一致的情形 */
-          msg = '两次输入不一致';
-        } else {
-          msg = self.getMsg(obj, passed, result.alias, tipType);
-        }
-        self.showMsg(obj, msg, passed, tipType);
       }
     }
-    if (passed && self.settings.showAllError) {
+    type = result.passed ? 0 : !val || obj.is('select') && +val === -1 ? 1 : 2;
+    self.pass(obj, type);
+    tipType = self.getTipType(obj);
+    obj.data('lastVal', val);
+    if (obj.attr('ajaxurl') && !type) {
       return true;
-    } else {
+    }
+    msg = void 0;
+    if (type === 2 && obj.attr('rcheck')) {
+      msg = '两次输入不一致';
+    } else if (type === 2 || (type === 1 && (obj.attr('showNull') || self.settings.showNull)) || (!type && (obj.attr('showSucc') || self.settings.showSucc))) {
+      msg = self.getMsg(obj, type, result.alias, tipType);
+    } else if (!type && !(obj.attr('showSucc') || self.settings.showSucc)) {
+      type = 3;
+      msg = ' ';
+    }
+    msg !== void 0 && self.showMsg(obj, msg, type, tipType);
+    if (/1|2/.test(type) && !self.settings.showAllError) {
       return false;
+    } else {
+      return true;
     }
   };
 
@@ -280,6 +284,8 @@ define(function(require, exports) {
     });
     if (!$("[pass='noPass']").length) {
       return Validate.tool.submit.call(self);
+    } else {
+      return false;
     }
   };
 
@@ -381,8 +387,8 @@ define(function(require, exports) {
     },
     parseTipClass: function(obj, type) {
       var newClassName, oldClassName;
+      oldClassName = obj.attr('class') || '';
       if (rClass.test(oldClassName) || /1|2/.test(type)) {
-        oldClassName = obj.attr('class') || '';
         newClassName = $.trim(oldClassName.replace(rClass, '')) + ' ' + msgClass[type];
         obj.attr('class', newClassName);
       }
@@ -590,7 +596,7 @@ define(function(require, exports) {
       if (!self.settings.ajaxPost) {
         if (!self.form.attr('action') || self.settings.forceUrl) {
           self.form.attr('action', self.settings.url || location.href);
-          return self.form.submit();
+          return true;
         }
       } else {
         if (!self.settings.url) {
