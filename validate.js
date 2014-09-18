@@ -20,7 +20,7 @@
    --- 可以是一个数组，数组规则为 ['a','b',funtion(){},["c","d"]] 数组元素只能是字符串，数组【同样符合外部数组规则】，函数，正则
  */
 define(function(require, exports) {
-  var Validate, buildConf, buildRule, logFn, msgAttr, msgClass, msgTip, pass, queue, rClass, rNumber, status;
+  var Validate, buildConf, buildRule, instantValidate, logFn, msgAttr, msgClass, msgTip, pass, queue, rClass, rNumber, status, v_uuid;
   buildRule = require('./rule');
   msgAttr = ['succ', 'null', 'fail'];
 
@@ -33,6 +33,7 @@ define(function(require, exports) {
   rNumber = /^[012]$/;
   rClass = /\bs\-(succ|warn|error)\b/g;
   queue = [];
+  v_uuid = 0;
   buildConf = {
     form: '.J_validate-form',
     submit: '.J_submit-form',
@@ -47,12 +48,12 @@ define(function(require, exports) {
     showSucc: false,
     debug: false
   };
-  Validate = function(config) {
+  Validate = function(form, config) {
     var self;
     self = this;
-    self.settings = $.extend(true, buildConf, config);
+    self.settings = $.extend(true, {}, buildConf, config);
     self.status = status[0];
-    self.form = typeof self.form === 'object' && self.form.jquery ? self.form : $(self.settings.form);
+    self.form = form;
     self.form.on(self.settings.trigger + '.validate', '[check]', function() {
       return self.check($(this));
     });
@@ -148,7 +149,7 @@ define(function(require, exports) {
     return _msg;
   };
 
-  /*获取提示信息显示位置  1  将当前input变色  2  在当前表单项中加上  3  弹框显示   字符串，指定显示位置的选择器 */
+  /*获取提示信息显示位置  1  将当前input变色  2  在当前表单项中加上 3 在当前检测表单项上指定位置显示  4  弹框显示   字符串，指定显示位置的选择器 */
   Validate.prototype.getTipType = function(obj) {
     var name;
     obj = Validate.tool.parseObj(obj, this.form).eq(0);
@@ -158,9 +159,9 @@ define(function(require, exports) {
 
   /* type  表示状态值 0 -> 成功   1 -> 空值信息  2 -> 错误信息 3-> 隐藏提示信息 */
   Validate.prototype.showMsg = function(obj, msg, type, tipType) {
-    var msgPlace, par;
+    var msgPlace, par, parPostion;
     obj = Validate.tool.parseObj(obj, this.form);
-    if (+tipType === 3) {
+    if (+tipType === 4) {
       require.async('lib/layer/layer', function(layer) {
         return layer.alert({
           'title': '表单校验提示',
@@ -174,11 +175,14 @@ define(function(require, exports) {
     }
     if (+tipType === 1) {
       msgPlace = obj;
-    } else if (+tipType === 2) {
+    } else if (/^[23]$/.test(tipType)) {
       par = obj.parents('.form-item');
       msgPlace = par.find('.input-msg');
       if (!msgPlace.length) {
         msgPlace = $('<span class="input-msg"/>').appendTo(par);
+      }
+      if (+tipType === 3) {
+        parPostion = par.css('position');
       }
     } else {
       msgPlace = $(tipType + ':eq(0)');
@@ -279,10 +283,10 @@ define(function(require, exports) {
     }
 
     /*逐个用check方法检测，便于随时停止检测 */
-    $('[check]').each(function() {
+    $('[check]', self.form).each(function() {
       return self.check($(this));
     });
-    if (!$("[pass='noPass']").length) {
+    if (!$("[pass='noPass']", self.form).length) {
       return Validate.tool.submit.call(self);
     } else {
       return false;
@@ -571,6 +575,9 @@ define(function(require, exports) {
       }
       return data;
     },
+    guid: function() {
+      return 'validate-' + (+new Date()) + (Math.random() + '').slice(-8) + v_uuid++;
+    },
 
     /*解析地址 */
     parseUrl: function(url, arg) {
@@ -608,7 +615,11 @@ define(function(require, exports) {
           console.table(data);
           return false;
         }
-        return self.ajax = $.post(self.settings.url, data).done(function(json) {
+        self.ajax = $.ajax({
+          url: self.settings.url,
+          data: data,
+          type: 'post'
+        }).done(function(json) {
           if ($.isFunction(self.settings.succFn)) {
             return self.changeStatus(2).settings.succFn.call(self, json);
           }
@@ -624,20 +635,38 @@ define(function(require, exports) {
         }).always(function() {
           return self.ajax = null;
         });
+        return false;
       }
     }
   };
-  $.fn.validate = function(conf) {
-    return new Validate(conf);
+  instantValidate = function(obj, conf) {
+    var _id;
+    if (obj.hasClass('J_validate-form')) {
+      _id = obj.attr('id');
+      if (!_id) {
+        _id = Validate.tool.guid();
+        obj.attr('id', _id);
+      }
+      return new Validate(obj, conf);
+    }
   };
-  return exports.validate = function(conf) {
-    return new Validate(conf);
+  return $.fn.validate = function(conf) {
+    var self;
+    self = $(this);
+    if (self.length === 1) {
+      return instantValidate(self, conf);
+    } else if (self.length > 1) {
+      return $.each(self, function() {
+        return instantValidate($(this), conf);
+      });
+    }
   };
 });
 
 
 /** change log
   2014-09-11 新增表单项指定位置显示提示信息
+  2014-09-15 为多个form表单实例化
  */
 
 //# sourceMappingURL=validate.map
