@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>validate检测 不传递任何参数</title>
+    <link rel="stylesheet" type="text/css" href="style.css"/>
+</head>
+<body>
+    <form class="form form-horizontal form-add">
+        <div class="form-item">
+            <label class="form-label " for="nikename">昵称</label>
+            <span class="input-box">
+                <input type="text" id="nick_name" name="data[nick_name]" check ignore="ignore" data-rule="maxlength,minlength" maxlength="10" minlength="3"  class="form-text">
+            </span>
+            <span class="input-msg">显示给其他会员查看</span>
+        </div>
+        <div class="form-item">
+            <label class="form-label " for="realname">姓名</label>
+            <span class="input-box">
+                <input type="text" class="form-text" name="data[real_name]" check value="" id="realname">
+            </span>
+        </div>
+        <div class="form-item">
+            <label class="form-label ">居住地</label>
+            <span class="input-box address-select">
+                <select class="form-select provice" name="provice" check data-level="provice"><option value="-1">省份</option><option value="北京市">北京市</option><option value="天津市">天津市</option><option value="上海市">上海市</option><option value="重庆市">重庆市</option><option value="河北省" selected="selected">河北省</option><option value="山西省">山西省</option><option value="内蒙古">内蒙古</option><option value="辽宁省">辽宁省</option><option value="吉林省">吉林省</option><option value="黑龙江省">黑龙江省</option><option value="江苏省">江苏省</option><option value="浙江省">浙江省</option><option value="安徽省">安徽省</option><option value="福建省">福建省</option><option value="江西省">江西省</option><option value="山东省">山东省</option><option value="河南省">河南省</option><option value="湖北省">湖北省</option><option value="湖南省">湖南省</option><option value="广东省">广东省</option><option value="广西">广西</option><option value="海南省">海南省</option><option value="四川省">四川省</option><option value="贵州省">贵州省</option><option value="云南省">云南省</option><option value="西藏">西藏</option><option value="陕西省">陕西省</option><option value="甘肃省">甘肃省</option><option value="青海省">青海省</option><option value="宁夏">宁夏</option><option value="新疆">新疆</option><option value="香港">香港</option><option value="澳门">澳门</option><option value="台湾省">台湾省</option></select>
+                <select class="form-select city" name="city" check data-level="city"><option value="-1">地级市</option><option value="石家庄">石家庄</option><option value="唐山">唐山</option><option value="秦皇岛">秦皇岛</option><option value="邯郸" selected="selected">邯郸</option><option value="邢台">邢台</option><option value="保定">保定</option><option value="张家口">张家口</option><option value="承德">承德</option><option value="沧州">沧州</option><option value="廊坊">廊坊</option><option value="衡水">衡水</option><option value="其他">其他</option></select>
+                <select class="form-select town" name="town" check data-level="town"><option value="-1">市、县级市、县</option><option value="邯山区">邯山区</option><option value="丛台区" selected="selected">丛台区</option><option value="复兴区">复兴区</option><option value="峰峰矿区">峰峰矿区</option><option value="武安市">武安市</option><option value="邱县">邱县</option><option value="大名县">大名县</option><option value="魏县">魏县</option><option value="曲周县">曲周县</option><option value="鸡泽县">鸡泽县</option><option value="肥乡县">肥乡县</option><option value="广平县">广平县</option><option value="成安县">成安县</option><option value="临漳县">临漳县</option><option value="磁县">磁县</option><option value="涉县">涉县</option><option value="永年县">永年县</option><option value="馆陶县">馆陶县</option><option value="邯郸县">邯郸县</option><option value="其他">其他</option></select>
+            </span>
+        </div>
+        <div class="form-item">
+        <label class="form-label ">职业</label>
+        <span class="input-box">
+            <select class="form-select" name="data[career]" check id="id_career">
+                <option value="-1">请选择职业</option>
+                <option value="工程师">工程师</option>
+                <option value="程序猿">程序猿</option>
+                <option value="设计师">设计师</option>
+                <option value="政府人员">政府人员</option>
+                <option value="教师">教师</option>
+                <option value="学生">学生</option>
+                <option value="司机">司机</option>
+                <option value="厨师">厨师</option>
+                <option value="销售员">销售员</option>
+                <option value="SOHO">SOHO</option>
+                <option value="收银员">收银员</option>
+                <option value="中介">中介</option>
+                <option value="翻译">翻译</option>
+                <option value="科研人员">科研人员</option>
+                <option value="律师">律师</option>
+                <option value="导游">导游</option>
+                <option value="后勤">后勤</option>
+                <option value="运动员">运动员</option>
+                <option value="教练">教练</option>
+                <option value="股民">股民</option>
+                <option value="咨询师">咨询师</option>
+                <option value="质检员">质检员</option>
+                <option value="快递员">快递员</option>
+                <option value="技工">技工</option>
+                <option value="农民">农民</option>
+                <option value="民工">民工</option>
+                <option value="服务生">服务生</option>
+                <option value="老板">老板</option>
+                <option value="经理">经理</option>
+                <option value="CEO">CEO</option>
+                <option value="CTO">CTO</option>
+                <option value="CFO">CFO</option>
+                <option value="COO">COO</option>
+                <option value="中级管理">基层管理</option>
+                <option value="中级管理">中级管理</option>
+                <option value="高级管理">高级管理</option>
+                <option value="自由职业者">自由职业者</option>
+                <option value="其它">其它</option>
+            </select>
+        </span>
+        </div>
+        <div class="form-item">
+            <label class="form-label " for="signTxt">个性签名</label>
+                                <span class="input-box">
+                                    <textarea class="form-textarea" check  id="signTxt" name="data[sign_txt]"></textarea>
+                                </span>
+            <span class="input-msg">可直接输入个性签名图片网址</span>
+        </div>
+        <div class="form-item item-save f-tlc">
+            <a href="javascript:;" class="u-btn u-btn-x s-save J_submit-form">保存</a>
+        </div>
+    </form>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/seajs/2.3.0/sea.js"></script>
+    <script src="./js/app.js"></script>
+</body>
+</html>
