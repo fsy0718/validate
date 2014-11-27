@@ -5,4 +5,4 @@ seajs.config({
 	base: '../../validate'
 });
 
-seajs.use('test/js/main');
+seajs.use('demo/js/main');
