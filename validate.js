@@ -47,15 +47,6 @@ define(function(require, exports) {
     icons: [true, true, true],
     msgs: [true, true, true],
     showAllError: true,
-
-    /*
-    showNullIcon: true #显示空图标
-    showNullText: true #显示空信息
-    showErrorIcon: true  #显示错误图标
-    showErrorText: true #显示错误信息
-    showSuccText: false  #显示成功信息
-    showSuccIcon: true  #显示成功图标
-     */
     checkSubmit: false,
     debug: false
   };
@@ -144,7 +135,7 @@ define(function(require, exports) {
   		查询顺序：行内各种提示信息 -> 别名提示信息  -> 默认错误提示  -> 内置别名提示  -> 默认提示
    */
   Validate.prototype.getMsg = function(obj, type, alias, tipType) {
-    var E, e, msgKey, _msg, _msgPrefix, _name;
+    var E, e, msgKey, _msg, _msgPrefix, _name, _r;
     _msg = '';
     if (!rNumber.test(type) || +tipType === 1) {
       return _msg;
@@ -152,7 +143,12 @@ define(function(require, exports) {
     if (type < 2) {
       alias = '';
     }
-    _msgPrefix = alias + msgAttr[+type];
+    if (type === 2 && (_r = obj.attr('rcheck'))) {
+      alias = 'rcheck';
+      _msgPrefix = obj.attr('rcheckLabel') || this.getLabel($('input[name="' + _r + '"]'));
+    } else {
+      _msgPrefix = alias + msgAttr[+type];
+    }
     msgKey = _msgPrefix + 'msg';
     _msg = obj.attr(msgKey);
     if (!_msg) {
@@ -165,7 +161,7 @@ define(function(require, exports) {
           _msg = this.settings[_name][msgKey];
         } catch (_error) {
           E = _error;
-          _msg = buildRule[alias] && buildRule[alias][3 - type];
+          _msg = obj.attr('rcheck') ? '{{label}}两次输入不一致' : buildRule[alias] && buildRule[alias][3 - type];
         }
       }
       _msg || (_msg = msgTip[type]);

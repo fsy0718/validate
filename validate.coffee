@@ -44,15 +44,6 @@ define (require,exports)->
     icons: [true,true,true]  #显示提示信息图标
     msgs: [true,true,true]
     showAllError: true
-    ###
-    showNullIcon: true #显示空图标
-    showNullText: true #显示空信息
-    showErrorIcon: true  #显示错误图标
-    showErrorText: true #显示错误信息
-    showSuccText: false  #显示成功信息
-    showSuccIcon: true  #显示成功图标
-    ###
-
     checkSubmit: false #只在提交时验证 默认为false
     debug: false   #调试用
 
@@ -130,7 +121,11 @@ define (require,exports)->
       return _msg
     if type < 2
       alias = ''
-    _msgPrefix = alias + msgAttr[+type]
+    if type is 2 and (_r = obj.attr('rcheck'))
+      alias = 'rcheck'
+      _msgPrefix = obj.attr('rcheckLabel') ||  @.getLabel($('input[name="' + _r + '"]'))
+    else
+      _msgPrefix = alias + msgAttr[+type]
     msgKey = _msgPrefix + 'msg'
     _msg = obj.attr(msgKey)
     unless _msg
@@ -141,7 +136,8 @@ define (require,exports)->
         try
           _msg = @.settings[_name][msgKey]
         catch E
-          _msg = buildRule[alias] and buildRule[alias][3 - type]
+
+          _msg = if obj.attr('rcheck') then '{{label}}两次输入不一致' else buildRule[alias] and buildRule[alias][3 - type]
       _msg ||= msgTip[type]
     _msg = parseMsg(_msg,obj,@)
     obj.attr(msgKey,_msg)
