@@ -123,7 +123,7 @@ define (require,exports)->
       alias = ''
     if type is 2 and (_r = obj.attr('rcheck'))
       alias = 'rcheck'
-      _msgPrefix = obj.attr('rcheckLabel') ||  @.getLabel($('input[name="' + _r + '"]'))
+      _msgPrefix = 'rcheck'
     else
       _msgPrefix = alias + msgAttr[+type]
     msgKey = _msgPrefix + 'msg'
@@ -136,8 +136,7 @@ define (require,exports)->
         try
           _msg = @.settings[_name][msgKey]
         catch E
-
-          _msg = if obj.attr('rcheck') then '{{label}}两次输入不一致' else buildRule[alias] and buildRule[alias][3 - type]
+          _msg = if obj.attr('rcheck') and type is 2 then '{{label}}两次输入不一致' else buildRule[alias] and buildRule[alias][3 - type]
       _msg ||= msgTip[type]
     _msg = parseMsg(_msg,obj,@)
     obj.attr(msgKey,_msg)
@@ -168,6 +167,7 @@ define (require,exports)->
       msgPlace = obj
     else
       _class = @.getDisplay(obj,type,'icon') and 'validate-' + msgAttr[type] || ''
+      !msg and !type and type = 3
       if /^[23]$/.test tipType
         par = obj.parents('.form-item')
         msgPlace = par.find('.input-msg')
@@ -188,7 +188,7 @@ define (require,exports)->
             msgPlace.data('tipName',name)
     parseTipClass(msgPlace,type)
     +tipType isnt 1 and msgPlace.html(msg).addClass(_class)
-    if @.settings.checkSubmit and !submitTrigger
+    if @.settings.checkSubmit and !submitTrigger  or !(_class or msg)
       msgPlace.css 'visibility','hidden'
     else
       msgPlace.css 'visibility','visible'
@@ -230,22 +230,9 @@ define (require,exports)->
     if obj.attr('ajaxurl') and !type  #ajax验证结果不在此处显示 TODO  此处需要修正
       return true
     tipType = self.getTipType(obj)
-    if self.getDisplay(obj,type,'msg')
-      msg = self.getMsg(obj,type,result.alias,tipType)
-    else
-      msg = ''
+    msg = self.getDisplay(obj,type,'msg') and self.getMsg(obj,type,result.alias,tipType) || ''
     self.showMsg(obj,msg,type,tipType,submitTrigger)
     return if /1|2/.test(type) and !self.settings.showAllError then false else true
-
-    ###if type is 2 and _r = obj.attr('rcheck')
-      _msgPrefix = obj.attr('rcheckLabel') ||  self.getLabel($('input[name="' + _r + '"]'))
-      msg = _msgPrefix + '输入不一致'
-    else if type is 2 or (type is 1 and (obj.attr('showNull') || self.settings.showNull)) or (!type and (obj.attr('showSucc') or self.settings.showSucc))
-      msg = self.getMsg(obj,type,result.alias,tipType)
-    else if !type and !(obj.attr('showSucc') or self.settings.showSucc)
-      msg = ' '
-    msg isnt undefined and self.showMsg(obj,msg,type,tipType,submitTrigger)
-    if /1|2/.test(type) and !self.settings.showAllError then return false else return true###
 
   ###自动生成提示信息头###
   Validate::getLabel = (obj)->
@@ -296,7 +283,7 @@ define (require,exports)->
       that = $(@)
       that.data('lastVal',null)
       tipType = self.getTipType(that)
-      self.showMsg(that,'',3,tipType,false)
+      self.showMsg(that,'',0,tipType,false)
     self
   ###检测结果存储###
   Validate::pass = (obj,status)->
@@ -431,7 +418,7 @@ define (require,exports)->
       while eithor < alias.length
         dtp = 0
         while dtp < alias[eithor].length
-          checkResult = _check(alias[eithor][dtp],val,obj,submitTrigger,_v)
+          checkResult = _check(alias[eithor][dtp],val,obj,submitTrigger,_v) || {}
           break unless checkResult.passed
           dtp++
         break if checkResult.passed
@@ -441,11 +428,11 @@ define (require,exports)->
         rule =
           alias: j
           reg: k
-        checkResult = _check(rule,val,obj,submitTrigger,_v)
+        checkResult = _check(rule,val,obj,submitTrigger,_v) || {}
         rule = null
         return false unless checkResult
     else
-      checkResult = _check(alias,val,obj,submitTrigger,_v)
+      checkResult = _check(alias,val,obj,submitTrigger,_v) || {}
     if checkResult.passed
       checkResult.passed = enhanceCheck(obj,val,checkResult.alias,submitTrigger,_v)
     return checkResult
