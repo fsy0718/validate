@@ -145,7 +145,7 @@ define(function(require, exports) {
     }
     if (type === 2 && (_r = obj.attr('rcheck'))) {
       alias = 'rcheck';
-      _msgPrefix = obj.attr('rcheckLabel') || this.getLabel($('input[name="' + _r + '"]'));
+      _msgPrefix = 'rcheck';
     } else {
       _msgPrefix = alias + msgAttr[+type];
     }
@@ -161,7 +161,7 @@ define(function(require, exports) {
           _msg = this.settings[_name][msgKey];
         } catch (_error) {
           E = _error;
-          _msg = obj.attr('rcheck') ? '{{label}}两次输入不一致' : buildRule[alias] && buildRule[alias][3 - type];
+          _msg = obj.attr('rcheck') && type === 2 ? '{{label}}两次输入不一致' : buildRule[alias] && buildRule[alias][3 - type];
         }
       }
       _msg || (_msg = msgTip[type]);
@@ -204,6 +204,7 @@ define(function(require, exports) {
       msgPlace = obj;
     } else {
       _class = this.getDisplay(obj, type, 'icon') && 'validate-' + msgAttr[type] || '';
+      !msg && !type && (type = 3);
       if (/^[23]$/.test(tipType)) {
         par = obj.parents('.form-item');
         msgPlace = par.find('.input-msg');
@@ -230,7 +231,7 @@ define(function(require, exports) {
     }
     parseTipClass(msgPlace, type);
     +tipType !== 1 && msgPlace.html(msg).addClass(_class);
-    if (this.settings.checkSubmit && !submitTrigger) {
+    if (this.settings.checkSubmit && !submitTrigger || !(_class || msg)) {
       msgPlace.css('visibility', 'hidden');
     } else {
       msgPlace.css('visibility', 'visible');
@@ -284,28 +285,13 @@ define(function(require, exports) {
       return true;
     }
     tipType = self.getTipType(obj);
-    if (self.getDisplay(obj, type, 'msg')) {
-      msg = self.getMsg(obj, type, result.alias, tipType);
-    } else {
-      msg = '';
-    }
+    msg = self.getDisplay(obj, type, 'msg') && self.getMsg(obj, type, result.alias, tipType) || '';
     self.showMsg(obj, msg, type, tipType, submitTrigger);
     if (/1|2/.test(type) && !self.settings.showAllError) {
       return false;
     } else {
       return true;
     }
-
-    /*if type is 2 and _r = obj.attr('rcheck')
-      _msgPrefix = obj.attr('rcheckLabel') ||  self.getLabel($('input[name="' + _r + '"]'))
-      msg = _msgPrefix + '输入不一致'
-    else if type is 2 or (type is 1 and (obj.attr('showNull') || self.settings.showNull)) or (!type and (obj.attr('showSucc') or self.settings.showSucc))
-      msg = self.getMsg(obj,type,result.alias,tipType)
-    else if !type and !(obj.attr('showSucc') or self.settings.showSucc)
-      msg = ' '
-    msg isnt undefined and self.showMsg(obj,msg,type,tipType,submitTrigger)
-    if /1|2/.test(type) and !self.settings.showAllError then return false else return true
-     */
   };
 
   /*自动生成提示信息头 */
@@ -368,7 +354,7 @@ define(function(require, exports) {
       that = $(this);
       that.data('lastVal', null);
       tipType = self.getTipType(that);
-      return self.showMsg(that, '', 3, tipType, false);
+      return self.showMsg(that, '', 0, tipType, false);
     });
     return self;
   };
@@ -558,7 +544,7 @@ define(function(require, exports) {
       while (eithor < alias.length) {
         dtp = 0;
         while (dtp < alias[eithor].length) {
-          checkResult = _check(alias[eithor][dtp], val, obj, submitTrigger, _v);
+          checkResult = _check(alias[eithor][dtp], val, obj, submitTrigger, _v) || {};
           if (!checkResult.passed) {
             break;
           }
@@ -576,14 +562,14 @@ define(function(require, exports) {
           alias: j,
           reg: k
         };
-        checkResult = _check(rule, val, obj, submitTrigger, _v);
+        checkResult = _check(rule, val, obj, submitTrigger, _v) || {};
         rule = null;
         if (!checkResult) {
           return false;
         }
       });
     } else {
-      checkResult = _check(alias, val, obj, submitTrigger, _v);
+      checkResult = _check(alias, val, obj, submitTrigger, _v) || {};
     }
     if (checkResult.passed) {
       checkResult.passed = enhanceCheck(obj, val, checkResult.alias, submitTrigger, _v);
@@ -758,12 +744,5 @@ define(function(require, exports) {
     return new Validate($(this), conf);
   };
 });
-
-
-/** change log
-  2014-09-11 新增表单项指定位置显示提示信息
-  2014-09-15 为多个form表单实例化
-  2014-11-17 去除多个表单实例化
- */
 
 //# sourceMappingURL=validate.map

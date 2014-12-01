@@ -565,11 +565,3 @@ define (require,exports)->
   $.fn.validate = (conf)->
     new Validate($(@),conf)
 
-
-
-
-###* change log
-  2014-09-11 新增表单项指定位置显示提示信息
-  2014-09-15 为多个form表单实例化
-  2014-11-17 去除多个表单实例化
-###
