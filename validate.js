@@ -20,7 +20,7 @@
    --- 可以是一个数组，数组规则为 ['a','b',funtion(){},["c","d"]] 数组元素只能是字符串，数组【同样符合外部数组规则】，函数，正则
  */
 define(function(require, exports) {
-  var Validate, buildConf, buildRule, check, enhanceCheck, getData, logFn, msgAttr, msgClass, msgTip, parseAlias, parseMsg, parseObj, parseReg, parseRule, parseTipClass, parseUrl, pass, queue, rClass, rNumber, status, submit, _check;
+  var Validate, buildConf, buildRule, check, enhanceCheck, getData, logFn, msgAttr, msgClass, msgTip, parseAlias, parseMsg, parseObj, parseReg, parseRule, parseTipClass, parseUrl, pass, queue, rClass, status, submit, _check;
   buildRule = require('./rule');
   msgAttr = ['succ', 'null', 'fail'];
 
@@ -30,7 +30,6 @@ define(function(require, exports) {
   pass = ['passed', 'noPass'];
   msgTip = ['{{label}}通过检测', '请{{verb}}{{label}}', '{{label}}不合格式要求'];
   logFn = ['error', 'log', 'warn'];
-  rNumber = /^[012]$/;
   rClass = /(\bs\-(succ|warn|error)\b)?(\bvalidate-(succ|null|fail)\b)?/g;
   queue = [];
   buildConf = {
@@ -126,7 +125,7 @@ define(function(require, exports) {
 
   /*改变当前表单的状态 */
   Validate.prototype.changeStatus = function(num) {
-    !rNumber.test(num) && (num = 0);
+    num || (num = 0);
     this.status = status[num];
     return this;
   };
@@ -137,8 +136,8 @@ define(function(require, exports) {
   Validate.prototype.getMsg = function(obj, type, alias, tipType) {
     var E, e, msgKey, _msg, _msgPrefix, _name, _r;
     _msg = '';
-    if (!rNumber.test(type) || +tipType === 1) {
-      return _msg;
+    if (+tipType === 1) {
+      return true;
     }
     if (type < 2) {
       alias = '';
@@ -229,13 +228,8 @@ define(function(require, exports) {
         }
       }
     }
-    parseTipClass(msgPlace, type);
-    +tipType !== 1 && msgPlace.html(msg).addClass(_class);
-    if (this.settings.checkSubmit && !submitTrigger || !(_class || msg)) {
-      msgPlace.css('visibility', 'hidden');
-    } else {
-      msgPlace.css('visibility', 'visible');
-    }
+    parseTipClass(msgPlace, type, msg);
+    +tipType !== 1 && msgPlace.html(msg).addClass(_class).css('visibility', (this.settings.checkSubmit && !submitTrigger || !(_class || msg) ? 'hidden' : 'visible'));
     return this;
   };
 
@@ -282,9 +276,14 @@ define(function(require, exports) {
     self.pass(obj, type);
     obj.data('lastVal', val);
     if (obj.attr('ajaxurl') && !type) {
+      enhanceCheck(obj, val, result.alias, submitTrigger, self);
       return true;
     }
     tipType = self.getTipType(obj);
+    self.settings[name] && $.isFunction(self.settings[name].beforeShowMsg) && self.settings[name].beforeShowMsg(obj, val, {
+      status: (type ? 100 : 0),
+      ajaxCheck: false
+    }, self);
     msg = self.getDisplay(obj, type, 'msg') && self.getMsg(obj, type, result.alias, tipType) || '';
     self.showMsg(obj, msg, type, tipType, submitTrigger);
     if (/1|2/.test(type) && !self.settings.showAllError) {
@@ -305,17 +304,15 @@ define(function(require, exports) {
     }
     return label;
   };
+
+  /*是否需要显示提示信息 */
   Validate.prototype.getDisplay = function(obj, testType, type) {
-    var result, _icon;
+    var name, result, _icon;
     obj = parseObj(obj, this);
     _icon = 'show' + msgAttr[testType] + type;
-    result = this.settings[type + 's'][testType];
-    if (obj.attr(_icon) !== void 0) {
-      result = obj.attr(_icon);
-    } else if (this.settings.name && $.isPlainObject(this.settings.name)) {
-      result = this.settings.name[_icon];
-    }
-    result === 'false' && (result = false);
+    name = obj.attr('name');
+    result = obj.attr(_icon) || this.settings[name] && $.isPlainObject(this.settings[name]) && this.settings[name][_icon];
+    result = result === 'false' ? false : result === void 0 ? this.settings[type + 's'][testType] : result;
     return result;
   };
 
@@ -465,13 +462,11 @@ define(function(require, exports) {
     }
     return rule;
   };
-  parseTipClass = function(obj, type) {
+  parseTipClass = function(obj, type, addNewClass) {
     var newClassName, oldClassName;
     oldClassName = obj.attr('class') || '';
-    if (rClass.test(oldClassName) || type < 3) {
-      newClassName = $.trim(oldClassName.replace(rClass, '')) + ' ' + msgClass[type];
-      obj.attr('class', newClassName);
-    }
+    newClassName = $.trim(oldClassName.replace(rClass, '')) + (addNewClass ? ' ' + msgClass[type] : '');
+    obj.attr('class', newClassName);
     return obj;
   };
 
@@ -603,22 +598,16 @@ define(function(require, exports) {
         beforeSend: function() {
           return _v.ajaxValidate = true;
         }
-      }).done(function(json) {
+      }, tipType = +tipType === 1 ? 2 : tipType(不需要实时显示检测状态), self.showMsg(obj, '检测中……', 1, tipType, submitTrigger)).done(function(json) {
         var msg, type;
         data = $.parseJSON(json);
 
         /*未通过的由服务器做出判断 */
         type = data.status ? 2 : 0;
         _v.pass(obj, type);
-        if (_v.settings[name] && $.isFunction(_v.settings[name].remoteMsg)) {
-          msg = _v.settings[name].remoteMsg(obj, type, _v);
-        } else {
-          msg = data.msg;
-        }
-        if (!msg) {
-          msg = _v.getMsg(obj, type, alias, tipType);
-        }
-        _v.showMsg(obj, msg, type, tipType, submitTrigger);
+        _v.settings[name] && $.isFunction(_v.settings[name].beforeShowMsg) && _v.settings[name].beforeShowMsg(obj, val, data, _v);
+        _v.getDisplay(obj, type, 'msg') && (msg = (_v.settings[name] && $.isFunction(_v.settings[name].remoteMsg) ? _v.settings[name].remoteMsg(obj, type, _v) : data.msg) || _v.getMsg(obj, type, alias, tipType));
+        _v.showMsg(obj, msg || '', type, tipType, submitTrigger);
         _v.ajaxValidate = null;
         if (queue.length) {
           queue.shift();

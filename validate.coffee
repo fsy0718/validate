@@ -27,7 +27,6 @@ define (require,exports)->
   pass = ['passed','noPass']
   msgTip = ['{{label}}通过检测','请{{verb}}{{label}}','{{label}}不合格式要求']
   logFn = ['error','log','warn']
-  rNumber = /^[012]$/
   rClass = /(\bs\-(succ|warn|error)\b)?(\bvalidate-(succ|null|fail)\b)?/g
   queue = []
   buildConf =
@@ -47,7 +46,7 @@ define (require,exports)->
     checkSubmit: false #只在提交时验证 默认为false
     debug: false   #调试用
 
-      
+
   Validate = (form,config)->
     self = @
     self.form = form
@@ -108,7 +107,7 @@ define (require,exports)->
 
   ###改变当前表单的状态###
   Validate::changeStatus = (num)->
-    !rNumber.test(num) and num = 0
+    num ||= 0
     @.status = status[num]
     @
 
@@ -117,8 +116,8 @@ define (require,exports)->
   ###
   Validate::getMsg = (obj,type,alias,tipType)->
     _msg = ''
-    if  !rNumber.test(type) or +tipType is 1
-      return _msg
+    if  +tipType is 1
+      return true #返回true  便于parseTipClass调用时切换类名
     if type < 2
       alias = ''
     if type is 2 and (_r = obj.attr('rcheck'))
@@ -186,12 +185,8 @@ define (require,exports)->
             return
           else
             msgPlace.data('tipName',name)
-    parseTipClass(msgPlace,type)
-    +tipType isnt 1 and msgPlace.html(msg).addClass(_class)
-    if @.settings.checkSubmit and !submitTrigger  or !(_class or msg)
-      msgPlace.css 'visibility','hidden'
-    else
-      msgPlace.css 'visibility','visible'
+    parseTipClass(msgPlace,type,msg)
+    +tipType isnt 1 and  msgPlace.html(msg).addClass(_class).css('visibility',(if @.settings.checkSubmit and !submitTrigger  or !(_class or msg) then 'hidden' else 'visible'))
     return @
 
   ###检测 submitTrigger表示提交时触发检测###
@@ -228,8 +223,10 @@ define (require,exports)->
     self.pass(obj,type)
     obj.data('lastVal',val)
     if obj.attr('ajaxurl') and !type  #ajax验证结果不在此处显示 TODO  此处需要修正
+      enhanceCheck(obj,val,result.alias,submitTrigger,self)
       return true
     tipType = self.getTipType(obj)
+    self.settings[name] and $.isFunction(self.settings[name].beforeShowMsg) and self.settings[name].beforeShowMsg(obj,val,{status: (if type then 100 else 0),ajaxCheck:false},self)
     msg = self.getDisplay(obj,type,'msg') and self.getMsg(obj,type,result.alias,tipType) || ''
     self.showMsg(obj,msg,type,tipType,submitTrigger)
     return if /1|2/.test(type) and !self.settings.showAllError then false else true
@@ -243,17 +240,13 @@ define (require,exports)->
       label = (_label.text() || '').replace(/^\s*\**|[:：]\s*$/g,'')
     label
 
-
-
+  ###是否需要显示提示信息###
   Validate::getDisplay = (obj,testType,type)->
     obj = parseObj(obj,@)
     _icon = 'show' + msgAttr[testType] + type
-    result = @.settings[type + 's'][testType]
-    if obj.attr(_icon) isnt undefined
-      result = obj.attr(_icon)
-    else if @.settings.name and $.isPlainObject(@.settings.name)
-      result = @.settings.name[_icon]
-    result is 'false' and result = false
+    name = obj.attr('name')
+    result = obj.attr(_icon) || @.settings[name] and $.isPlainObject(@.settings[name]) and @.settings[name][_icon]
+    result = if result is 'false' then false else if result is undefined then @.settings[type + 's'][testType] else result
     result
 
   ###提交表单准备工作###
@@ -302,7 +295,7 @@ define (require,exports)->
   ###解析jquery对象###
   parseObj = (obj,_v)->
     if obj.jquery  and (obj.is(':radio') or obj.is(':checkbox'))
-        obj = obj.attr('name')
+      obj = obj.attr('name')
     if obj.jquery then obj else $('[name="' + obj + '"]',_v.form)
 
   ###解析规则，若规则是一个字符串，组合成数组或字符串，若是一个数组，对象 不作处理，若是一个函数 正则，不作处理，并将别名置空###
@@ -365,11 +358,11 @@ define (require,exports)->
       rule = null
     rule
 
-  parseTipClass = (obj,type)->
+  parseTipClass = (obj,type,addNewClass)->
     oldClassName = obj.attr('class') || ''
-    if rClass.test(oldClassName) or type < 3
-      newClassName = $.trim(oldClassName.replace rClass,'') + ' ' + msgClass[type]
-      obj.attr('class',newClassName)
+    #if rClass.test(oldClassName) or type < 3
+    newClassName = $.trim(oldClassName.replace rClass,'') + (if addNewClass then ' ' +  msgClass[type] else '')
+    obj.attr('class',newClassName)
     obj
 
   ###解析消息  将基本的占位符替换###
@@ -387,7 +380,6 @@ define (require,exports)->
         else
           obj.attr(b)
     msg
-
 
   ###单个检测函数,引入的检测是规则别名，需要进行处理成规则详情###
   _check = (alias,val,obj,submitTrigger,_v)->
@@ -457,20 +449,16 @@ define (require,exports)->
         type: obj.attr('method') || _v.settings.ajaxType
         beforeSend: ->
           _v.ajaxValidate = true
-          #tipType = if +tipType is 1 then 2 else tipType  不需要实时显示检测状态
-          #self.showMsg(obj,'检测中……',1,tipType,submitTrigger)
+        tipType = if +tipType is 1 then 2 else tipType  不需要实时显示检测状态
+        self.showMsg(obj,'检测中……',1,tipType,submitTrigger)
       ).done (json)->
         data = $.parseJSON(json)
         ###未通过的由服务器做出判断###
         type = if data.status then 2 else 0
         _v.pass(obj,type)
-        if _v.settings[name] and $.isFunction(_v.settings[name].remoteMsg)
-          msg = _v.settings[name].remoteMsg(obj,type,_v)
-        else
-          msg = data.msg
-        unless msg
-          msg = _v.getMsg(obj,type,alias,tipType)
-        _v.showMsg(obj,msg,type,tipType,submitTrigger)
+        _v.settings[name] and $.isFunction(_v.settings[name].beforeShowMsg) and _v.settings[name].beforeShowMsg(obj,val,data,_v)
+        _v.getDisplay(obj,type,'msg') and  msg = (if _v.settings[name] and $.isFunction(_v.settings[name].remoteMsg) then _v.settings[name].remoteMsg(obj,type,_v) else data.msg) || _v.getMsg(obj,type,alias,tipType)
+        _v.showMsg(obj,msg || '',type,tipType,submitTrigger)
         _v.ajaxValidate = null
         if queue.length #提交表单
           queue.shift()
