@@ -42,6 +42,7 @@ define(function(require, exports) {
     ignoreHidden: false,
     showProgressIcon: '.J_loading-box',
     showProgressText: '.J_submit-form',
+    showrinfo: false,
     trigger: 'blur',
     icons: [true, true, true],
     msgs: [true, true, true],
@@ -177,10 +178,26 @@ define(function(require, exports) {
     name = obj.attr('name');
     return obj.attr('tipType') || this.settings[name] && this.settings[name].tipType || this.form.attr('tipType') || this.settings.tipType || 1;
   };
+  Validate.prototype.getMsgEle = function(obj, tipType) {
+    var msgPlace, par;
+    msgPlace = null;
+    if (+tipType === 1) {
+      msgPlace = obj;
+    } else if (/^[23]$/.test(tipType)) {
+      par = obj.parents('.form-item');
+      msgPlace = par.find('.input-msg');
+      if (!msgPlace.length) {
+        msgPlace = $('<span class="input-msg"/>').appendTo(par);
+      }
+    } else if (tipType && tipType !== 4) {
+      msgPlace = $(tipType + ':eq(0)');
+    }
+    return msgPlace;
+  };
 
   /* type  表示状态值 0 -> 成功   1 -> 空值信息  2 -> 错误信息 3-> 隐藏提示信息 */
   Validate.prototype.showMsg = function(obj, msg, type, tipType, submitTrigger) {
-    var msgPlace, name, par, parPostion, tipName, _class;
+    var msgPlace, _class;
     obj = parseObj(obj, this);
     _class = '';
     if (+tipType === 4) {
@@ -199,37 +216,15 @@ define(function(require, exports) {
         });
       });
       return this;
-    } else if (+tipType === 1) {
-      msgPlace = obj;
     } else {
-      _class = this.getDisplay(obj, type, 'icon') && 'validate-' + msgAttr[type] || '';
-      !msg && !type && (type = 3);
-      if (/^[23]$/.test(tipType)) {
-        par = obj.parents('.form-item');
-        msgPlace = par.find('.input-msg');
-        if (!msgPlace.length) {
-          msgPlace = $('<span class="input-msg"/>').appendTo(par);
-        }
-        if (+tipType === 3) {
-          parPostion = par.css('position');
-        }
-      } else {
-        msgPlace = $(tipType + ':eq(0)');
-        tipName = msgPlace.data('tipName');
-        name = obj.attr('name');
-        if (/0|3/.test(type)) {
-          msgPlace.data('tipName', null);
-        } else if (/^1|2$/.test(type)) {
-          if (tipName === name) {
-            return;
-          } else {
-            msgPlace.data('tipName', name);
-          }
-        }
+      msgPlace = this.getMsgEle(obj, tipType);
+      if (tipType && +tipType !== 1) {
+        _class = this.getDisplay(obj, type, 'icon') && 'validate-' + msgAttr[type] || '';
+        !msg && !type && (type = 3);
       }
     }
     parseTipClass(msgPlace, type, msg);
-    +tipType !== 1 && msgPlace.html(msg).addClass(_class).css('visibility', (this.settings.checkSubmit && !submitTrigger || !(_class || msg) ? 'hidden' : 'visible'));
+    +tipType !== 1 && msgPlace.css('visibility', (this.settings.checkSubmit && !submitTrigger || !(_class || msg) ? 'hidden' : 'visible')).html(msg).addClass(_class);
     return this;
   };
 
@@ -304,8 +299,6 @@ define(function(require, exports) {
     }
     return label;
   };
-
-  /*是否需要显示提示信息 */
   Validate.prototype.getDisplay = function(obj, testType, type) {
     var name, result, _icon;
     obj = parseObj(obj, this);
@@ -596,9 +589,19 @@ define(function(require, exports) {
         data: data,
         type: obj.attr('method') || _v.settings.ajaxType,
         beforeSend: function() {
-          return _v.ajaxValidate = true;
+          var msg;
+          _v.ajaxValidate = true;
+          if (obj.attr('showrinfo') || $.isPlainObject(_v.settings[name]) && _v.settings[name].showrinfo || _v.settings.showrinfo) {
+            tipType = +tipType === 1 ? 2 : tipType;
+            msg = obj.attr('rinfo') || _v.settings[name].rinfo || _v.settings.rinfo || '检测中……';
+            if (/^\.[^\.]+/.test(msg)) {
+              _v.getMsgEle(obj, tipType).addClass(msg.substring(0));
+              msg = _v.settings.rinfo || '检测中……';
+            }
+            return _v.showMsg(obj, msg, 1, tipType, submitTrigger);
+          }
         }
-      }, tipType = +tipType === 1 ? 2 : tipType(不需要实时显示检测状态), self.showMsg(obj, '检测中……', 1, tipType, submitTrigger)).done(function(json) {
+      }).done(function(json) {
         var msg, type;
         data = $.parseJSON(json);
 
@@ -709,9 +712,7 @@ define(function(require, exports) {
       }).done(function(json, textStatus, xhr) {
         _v.settings.showProgressIcon && $(_v.settings.showProgressIcon).hide();
         _v.settings.showProgressText && $(_v.settings.showProgressText)[_v._isSubmit ? 'val' : 'text'](_v._progressText).removeClass('s-tip');
-        if ($.isFunction(_v.settings.succFn)) {
-          return _v.changeStatus(2).settings.succFn(json, textStatus, xhr, _v);
-        }
+        return $.isFunction(_v.settings.succFn) && _v.changeStatus(2).settings.succFn(json, textStatus, xhr, _v);
       }).error(function(xhr, textStatus, err) {
         _v.settings.showProgressIcon && $(_v.settings.showProgressIcon).hide();
         _v.settings.showProgressText && $(_v.settings.showProgressText)[_v._isSubmit ? 'val' : 'text'](_v._progressText).removeClass('s-tip');
@@ -720,11 +721,10 @@ define(function(require, exports) {
         }
         _v.changeStatus(0);
         xhr.abort();
-        if ($.isFunction(_v.settings.errFn)) {
-          return _v.settings.errFn(xhr, textStatus, err, _v);
-        }
-      }).always(function() {
-        return _v.ajax = null;
+        return $.isFunction(_v.settings.errFn) && _v.settings.errFn(xhr, textStatus, err, _v);
+      }).always(function(xhr, textStatus, err) {
+        _v.ajax = null;
+        return $.isFunction(_v.settings.alwaysFn) && _v.settings.alwaysFn(xhr, textStatus, err, _v);
       });
       return false;
     }

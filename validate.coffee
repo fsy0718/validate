@@ -39,12 +39,14 @@ define (require,exports)->
     ignoreHidden: false
     showProgressIcon: '.J_loading-box'
     showProgressText: '.J_submit-form'
+    showrinfo: false #显示检测信息
     trigger: 'blur'
     icons: [true,true,true]  #显示提示信息图标
     msgs: [true,true,true]
     showAllError: true
     checkSubmit: false #只在提交时验证 默认为false
     debug: false   #调试用
+
 
 
   Validate = (form,config)->
@@ -147,6 +149,19 @@ define (require,exports)->
     name = obj.attr('name')
     obj.attr('tipType') || @.settings[name] and @.settings[name].tipType || @.form.attr('tipType') ||  @.settings.tipType || 1
 
+  Validate::getMsgEle = (obj,tipType)->
+    msgPlace = null
+    if +tipType is 1
+      msgPlace = obj
+    else if /^[23]$/.test tipType
+      par = obj.parents('.form-item')
+      msgPlace = par.find('.input-msg')
+      unless msgPlace.length
+        msgPlace = $('<span class="input-msg"/>').appendTo(par)
+    else if tipType and tipType isnt 4
+      msgPlace = $(tipType + ':eq(0)')
+    msgPlace
+
   ### type  表示状态值 0 -> 成功   1 -> 空值信息  2 -> 错误信息 3-> 隐藏提示信息 ###
   Validate::showMsg = (obj,msg,type,tipType,submitTrigger)->
     obj = parseObj(obj,@) #选择第一个 因为有checkbox 及 radio
@@ -162,31 +177,13 @@ define (require,exports)->
           cont:
             class: msgClass[type]
       return @
-    else if +tipType is 1
-      msgPlace = obj
     else
-      _class = @.getDisplay(obj,type,'icon') and 'validate-' + msgAttr[type] || ''
-      !msg and !type and type = 3
-      if /^[23]$/.test tipType
-        par = obj.parents('.form-item')
-        msgPlace = par.find('.input-msg')
-        unless msgPlace.length
-          msgPlace = $('<span class="input-msg"/>').appendTo(par)
-        if +tipType is 3  #3需要单独做处理  TODO 需要确定显示的位置
-          parPostion = par.css('position')
-      else
-        msgPlace = $(tipType + ':eq(0)') #只显示在第一个匹配的位置
-        tipName = msgPlace.data('tipName')  #此处需要判断 优先显示错误提示信息
-        name = obj.attr('name')
-        if /0|3/.test(type)
-          msgPlace.data('tipName',null)
-        else if /^1|2$/.test(type)
-          if tipName is name
-            return
-          else
-            msgPlace.data('tipName',name)
+      msgPlace = @.getMsgEle(obj,tipType)
+      if tipType and +tipType isnt 1
+        _class = @.getDisplay(obj,type,'icon') and 'validate-' + msgAttr[type] || ''
+        !msg and !type and type = 3
     parseTipClass(msgPlace,type,msg)
-    +tipType isnt 1 and  msgPlace.html(msg).addClass(_class).css('visibility',(if @.settings.checkSubmit and !submitTrigger  or !(_class or msg) then 'hidden' else 'visible'))
+    +tipType isnt 1 and  msgPlace.css('visibility',(if @.settings.checkSubmit and !submitTrigger  or !(_class or msg) then 'hidden' else 'visible')).html(msg).addClass(_class)
     return @
 
   ###检测 submitTrigger表示提交时触发检测###
@@ -222,7 +219,7 @@ define (require,exports)->
     type = if result.passed then 0 else if !val or obj.is('select') and +val is -1 then 1 else 2
     self.pass(obj,type)
     obj.data('lastVal',val)
-    if obj.attr('ajaxurl') and !type  #ajax验证结果不在此处显示 TODO  此处需要修正
+    if obj.attr('ajaxurl') and !type  #ajax验证结果不在此处显示
       enhanceCheck(obj,val,result.alias,submitTrigger,self)
       return true
     tipType = self.getTipType(obj)
@@ -240,7 +237,6 @@ define (require,exports)->
       label = (_label.text() || '').replace(/^\s*\**|[:：]\s*$/g,'')
     label
 
-  ###是否需要显示提示信息###
   Validate::getDisplay = (obj,testType,type)->
     obj = parseObj(obj,@)
     _icon = 'show' + msgAttr[testType] + type
@@ -360,7 +356,6 @@ define (require,exports)->
 
   parseTipClass = (obj,type,addNewClass)->
     oldClassName = obj.attr('class') || ''
-    #if rClass.test(oldClassName) or type < 3
     newClassName = $.trim(oldClassName.replace rClass,'') + (if addNewClass then ' ' +  msgClass[type] else '')
     obj.attr('class',newClassName)
     obj
@@ -449,8 +444,13 @@ define (require,exports)->
         type: obj.attr('method') || _v.settings.ajaxType
         beforeSend: ->
           _v.ajaxValidate = true
-        tipType = if +tipType is 1 then 2 else tipType  不需要实时显示检测状态
-        self.showMsg(obj,'检测中……',1,tipType,submitTrigger)
+          if obj.attr('showrinfo') or $.isPlainObject(_v.settings[name]) and _v.settings[name].showrinfo or _v.settings.showrinfo
+            tipType = if +tipType is 1 then 2 else tipType #强制更改tipType是1
+            msg = obj.attr('rinfo') or _v.settings[name].rinfo or _v.settings.rinfo or '检测中……'
+            if /^\.[^\.]+/.test(msg)
+              _v.getMsgEle(obj,tipType).addClass(msg.substring(0))
+              msg = _v.settings.rinfo || '检测中……'
+            _v.showMsg(obj,msg,1,tipType,submitTrigger) #TODO 需要增加type类型
       ).done (json)->
         data = $.parseJSON(json)
         ###未通过的由服务器做出判断###
@@ -534,20 +534,17 @@ define (require,exports)->
       .done (json,textStatus,xhr)->  #需要先清除进度标识，避免成功函数调用时，还存在进度图标
         _v.settings.showProgressIcon and $(_v.settings.showProgressIcon).hide()
         _v.settings.showProgressText and $(_v.settings.showProgressText)[if _v._isSubmit then 'val' else 'text'](_v._progressText).removeClass('s-tip')
-        if  $.isFunction _v.settings.succFn
-          _v.changeStatus(2).settings.succFn(json,textStatus,xhr,_v)
+        $.isFunction(_v.settings.succFn) and _v.changeStatus(2).settings.succFn(json,textStatus,xhr,_v)
       .error (xhr,textStatus,err)->
         _v.settings.showProgressIcon and $(_v.settings.showProgressIcon).hide()
         _v.settings.showProgressText and $(_v.settings.showProgressText)[if _v._isSubmit then 'val' else 'text'](_v._progressText).removeClass('s-tip')
-        if err is 'abort'  #abort自动处理掉
-          return false
+        return false if err is 'abort' #abort自动处理掉
         _v.changeStatus(0) #abort不改变状态，需要通知ajax远程检测当前表单状态
         xhr.abort()
-        if $.isFunction _v.settings.errFn
-          _v.settings.errFn(xhr,textStatus,err,_v)
-      .always ->
+        $.isFunction(_v.settings.errFn) and _v.settings.errFn(xhr,textStatus,err,_v)
+      .always (xhr,textStatus,err)->
         _v.ajax = null
-
+        $.isFunction(_v.settings.alwaysFn) and _v.settings.alwaysFn(xhr,textStatus,err,_v)
       return false
 
   $.fn.validate = (conf)->
