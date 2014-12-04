@@ -59,8 +59,8 @@ define(function(require, exports) {
     }
     self.settings = $.extend(true, {}, buildConf, config);
     self.status = status[0];
-    self.form.on(self.settings.trigger + '.validate', '[check]', function() {
-      return self.check($(this));
+    self.form.on(self.settings.trigger + '.validate', '[check]', function(e, eData) {
+      return self.check($(this), false, e, eData);
     });
     self.form.find('input[rcheck]').each(function() {
       var _inputCompare, _this;
@@ -80,7 +80,7 @@ define(function(require, exports) {
     if (!$(self.settings.submit).length) {
       self.settings.submit = ':submit';
     }
-    self.form.on('click.validate', self.settings.submit, function(e) {
+    self.form.on('click.validate', self.settings.submit, function(e, eData) {
       e.preventDefault();
       return self.form.trigger('submit');
     });
@@ -147,6 +147,7 @@ define(function(require, exports) {
       alias = 'rcheck';
       _msgPrefix = 'rcheck';
     } else {
+      alias || (alias = '');
       _msgPrefix = alias + msgAttr[+type];
     }
     msgKey = _msgPrefix + 'msg';
@@ -178,7 +179,7 @@ define(function(require, exports) {
     name = obj.attr('name');
     return obj.attr('tipType') || this.settings[name] && this.settings[name].tipType || this.form.attr('tipType') || this.settings.tipType || 1;
   };
-  Validate.prototype.getMsgEle = function(obj, tipType) {
+  Validate.prototype.getMsgEle = function(obj, tipType, e, eData) {
     var msgPlace, par;
     msgPlace = null;
     if (+tipType === 1) {
@@ -196,7 +197,7 @@ define(function(require, exports) {
   };
 
   /* type  表示状态值 0 -> 成功   1 -> 空值信息  2 -> 错误信息 3-> 隐藏提示信息 */
-  Validate.prototype.showMsg = function(obj, msg, type, tipType, submitTrigger) {
+  Validate.prototype.showMsg = function(obj, msg, type, tipType, submitTrigger, e, eData) {
     var msgPlace, _class;
     obj = parseObj(obj, this);
     _class = '';
@@ -217,7 +218,7 @@ define(function(require, exports) {
       });
       return this;
     } else {
-      msgPlace = this.getMsgEle(obj, tipType);
+      msgPlace = this.getMsgEle(obj, tipType, e, eData);
       if (tipType && +tipType !== 1) {
         _class = this.getDisplay(obj, type, 'icon') && 'validate-' + msgAttr[type] || '';
         !msg && !type && (type = 3);
@@ -229,7 +230,7 @@ define(function(require, exports) {
   };
 
   /*检测 submitTrigger表示提交时触发检测 */
-  Validate.prototype.check = function(obj, submitTrigger) {
+  Validate.prototype.check = function(obj, submitTrigger, e, eData) {
     var msg, name, reg, result, self, tipType, type, val;
     self = this;
     type = obj.attr('type');
@@ -247,7 +248,7 @@ define(function(require, exports) {
 
     /*用户自定义检测函数,并且返回检测结果 */
     if (self.settings[name] && $.isFunction(self.settings[name]['check'])) {
-      result = self.settings[name]['check'](val, obj, buildRule, submitTrigger, self);
+      result = self.settings[name]['check'](val, obj, buildRule, submitTrigger, self, e, eData);
       val = self.getVal(obj, obj.is(':password') ? false : true);
       try {
         result.passed;
@@ -264,7 +265,7 @@ define(function(require, exports) {
         };
       } else {
         reg = self.getReg(obj);
-        result = check(reg, val, obj, submitTrigger, self);
+        result = check(reg, val, obj, submitTrigger, self, e, eData);
       }
     }
     type = result.passed ? 0 : !val || obj.is('select') && +val === -1 ? 1 : 2;
@@ -279,8 +280,8 @@ define(function(require, exports) {
       status: (type ? 100 : 0),
       ajaxCheck: false
     }, self);
-    msg = self.getDisplay(obj, type, 'msg') && self.getMsg(obj, type, result.alias, tipType) || '';
-    self.showMsg(obj, msg, type, tipType, submitTrigger);
+    msg = self.getDisplay(obj, type, 'msg') && self.getMsg(obj, type, result.alias, tipType, e, eData) || '';
+    self.showMsg(obj, msg, type, tipType, submitTrigger, e, eData);
     if (/1|2/.test(type) && !self.settings.showAllError) {
       return false;
     } else {
@@ -326,7 +327,7 @@ define(function(require, exports) {
 
     /*逐个用check方法检测，便于随时停止检测 */
     $('[check]', self.form).each(function() {
-      return self.check($(this), true);
+      return self.check($(this), true, {}, null);
     });
     if (!$("[pass='noPass']", self.form).length) {
       return submit(self);
@@ -344,7 +345,7 @@ define(function(require, exports) {
       that = $(this);
       that.data('lastVal', null);
       tipType = self.getTipType(that);
-      return self.showMsg(that, '', 0, tipType, false);
+      return self.showMsg(that, '', 0, tipType, false, {}, null);
     });
     return self;
   };
@@ -493,7 +494,7 @@ define(function(require, exports) {
   };
 
   /*单个检测函数,引入的检测是规则别名，需要进行处理成规则详情 */
-  _check = function(alias, val, obj, submitTrigger, _v) {
+  _check = function(alias, val, obj, submitTrigger, _v, e, eData) {
     var passed, rule;
     if (obj.attr('ajaxurl')) {
       if (_v.ajax) {
@@ -524,7 +525,7 @@ define(function(require, exports) {
   };
 
   /*检测函数 */
-  check = function(reg, val, obj, submitTrigger, _v) {
+  check = function(reg, val, obj, submitTrigger, _v, e, eData) {
     var alias, checkResult, dtp, eithor;
     alias = parseReg(reg);
     if ($.isArray(alias)) {
@@ -532,7 +533,7 @@ define(function(require, exports) {
       while (eithor < alias.length) {
         dtp = 0;
         while (dtp < alias[eithor].length) {
-          checkResult = _check(alias[eithor][dtp], val, obj, submitTrigger, _v) || {};
+          checkResult = _check(alias[eithor][dtp], val, obj, submitTrigger, _v, e, eData) || {};
           if (!checkResult.passed) {
             break;
           }
@@ -550,23 +551,23 @@ define(function(require, exports) {
           alias: j,
           reg: k
         };
-        checkResult = _check(rule, val, obj, submitTrigger, _v) || {};
+        checkResult = _check(rule, val, obj, submitTrigger, _v, e, eData) || {};
         rule = null;
         if (!checkResult) {
           return false;
         }
       });
     } else {
-      checkResult = _check(alias, val, obj, submitTrigger, _v) || {};
+      checkResult = _check(alias, val, obj, submitTrigger, _v, e, eData) || {};
     }
     if (checkResult.passed) {
-      checkResult.passed = enhanceCheck(obj, val, checkResult.alias, submitTrigger, _v);
+      checkResult.passed = enhanceCheck(obj, val, checkResult.alias, submitTrigger, _v, e, eData);
     }
     return checkResult;
   };
 
   /*加强检测 TODO 需要对fe进行检测 */
-  enhanceCheck = function(obj, val, alias, submitTrigger, _v) {
+  enhanceCheck = function(obj, val, alias, submitTrigger, _v, e, eData) {
     var data, name, referVal, tipType, url;
     if (name = obj.attr('rcheck')) {
       referVal = _v.getVal($('[name="' + name + '"]', _v.form));
@@ -582,7 +583,7 @@ define(function(require, exports) {
       data = {};
       data[name] = val;
       if (_v.settings[name] && $.isFunction(_v.settings[name].beforeRemoteCheck)) {
-        data = _v.settings[name].beforeRemoteCheck(data, _v);
+        data = _v.settings[name].beforeRemoteCheck(data, _v, e, eData);
       }
       return _v.ajax = $.ajax({
         url: url,
@@ -595,10 +596,10 @@ define(function(require, exports) {
             tipType = +tipType === 1 ? 2 : tipType;
             msg = obj.attr('rinfo') || _v.settings[name].rinfo || _v.settings.rinfo || '检测中……';
             if (/^\.[^\.]+/.test(msg)) {
-              _v.getMsgEle(obj, tipType).addClass(msg.substring(0));
+              _v.getMsgEle(obj, tipType, e, eData).addClass(msg.substring(0));
               msg = _v.settings.rinfo || '检测中……';
             }
-            return _v.showMsg(obj, msg, 1, tipType, submitTrigger);
+            return _v.showMsg(obj, msg, 1, tipType, submitTrigger, e, eData);
           }
         }
       }).done(function(json) {
@@ -609,8 +610,8 @@ define(function(require, exports) {
         type = data.status ? 2 : 0;
         _v.pass(obj, type);
         _v.settings[name] && $.isFunction(_v.settings[name].beforeShowMsg) && _v.settings[name].beforeShowMsg(obj, val, data, _v);
-        _v.getDisplay(obj, type, 'msg') && (msg = (_v.settings[name] && $.isFunction(_v.settings[name].remoteMsg) ? _v.settings[name].remoteMsg(obj, type, _v) : data.msg) || _v.getMsg(obj, type, alias, tipType));
-        _v.showMsg(obj, msg || '', type, tipType, submitTrigger);
+        _v.getDisplay(obj, type, 'msg') && (msg = (_v.settings[name] && $.isFunction(_v.settings[name].remoteMsg) ? _v.settings[name].remoteMsg(obj, type, _v, e, eData) : data.msg) || _v.getMsg(obj, type, alias, tipType, e, eData));
+        _v.showMsg(obj, msg || '', type, tipType, submitTrigger, e, eData);
         _v.ajaxValidate = null;
         if (queue.length) {
           queue.shift();

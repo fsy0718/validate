@@ -57,8 +57,8 @@ define (require,exports)->
     self.settings = $.extend true,{},buildConf,config
     self.status = status[0] #表单状态
 
-    self.form.on self.settings.trigger + '.validate','[check]',-> #添加实时检测事件，如果showAllError为false，则检测但不显示错误
-      self.check($(@))
+    self.form.on self.settings.trigger + '.validate','[check]',(e,eData)-> #添加实时检测事件，如果showAllError为false，则检测但不显示错误
+      self.check($(@),false,e,eData)
 
     self.form.find('input[rcheck]').each -> #加强输两次时的比较
       _this = $(@)
@@ -74,7 +74,7 @@ define (require,exports)->
     unless $(self.settings.submit).length
       self.settings.submit = ':submit'
 
-    self.form.on 'click.validate', self.settings.submit,(e)->
+    self.form.on 'click.validate', self.settings.submit,(e,eData)->
       e.preventDefault()
       self.form.trigger('submit')
     self.form.attr('hasValidate','true')
@@ -126,6 +126,7 @@ define (require,exports)->
       alias = 'rcheck'
       _msgPrefix = 'rcheck'
     else
+      alias ||= ''
       _msgPrefix = alias + msgAttr[+type]
     msgKey = _msgPrefix + 'msg'
     _msg = obj.attr(msgKey)
@@ -149,7 +150,7 @@ define (require,exports)->
     name = obj.attr('name')
     obj.attr('tipType') || @.settings[name] and @.settings[name].tipType || @.form.attr('tipType') ||  @.settings.tipType || 1
 
-  Validate::getMsgEle = (obj,tipType)->
+  Validate::getMsgEle = (obj,tipType,e,eData)->
     msgPlace = null
     if +tipType is 1
       msgPlace = obj
@@ -163,7 +164,7 @@ define (require,exports)->
     msgPlace
 
   ### type  表示状态值 0 -> 成功   1 -> 空值信息  2 -> 错误信息 3-> 隐藏提示信息 ###
-  Validate::showMsg = (obj,msg,type,tipType,submitTrigger)->
+  Validate::showMsg = (obj,msg,type,tipType,submitTrigger,e,eData)->
     obj = parseObj(obj,@) #选择第一个 因为有checkbox 及 radio
     _class = ''
     if +tipType is 4 #弹框显示
@@ -178,7 +179,7 @@ define (require,exports)->
             class: msgClass[type]
       return @
     else
-      msgPlace = @.getMsgEle(obj,tipType)
+      msgPlace = @.getMsgEle(obj,tipType,e,eData)
       if tipType and +tipType isnt 1
         _class = @.getDisplay(obj,type,'icon') and 'validate-' + msgAttr[type] || ''
         !msg and !type and type = 3
@@ -187,7 +188,7 @@ define (require,exports)->
     return @
 
   ###检测 submitTrigger表示提交时触发检测###
-  Validate::check = (obj,submitTrigger)->
+  Validate::check = (obj,submitTrigger,e,eData)->
     self = @
     type = obj.attr('type')
     if /button|rest|submit|file/.test type
@@ -201,7 +202,7 @@ define (require,exports)->
     name = obj.attr('name')
     ###用户自定义检测函数,并且返回检测结果###
     if self.settings[name] and $.isFunction self.settings[name]['check']
-      result = self.settings[name]['check'](val,obj,buildRule,submitTrigger,self) # result.pass = true | false result.alias = ''
+      result = self.settings[name]['check'](val,obj,buildRule,submitTrigger,self,e,eData) # result.pass = true | false result.alias = ''
       val = self.getVal(obj,if obj.is(':password') then false else true) #可能会对val进行一些操作
       try
         result.passed
@@ -215,7 +216,7 @@ define (require,exports)->
           passed: false
       else
         reg = self.getReg(obj)
-        result = check(reg,val,obj,submitTrigger,self)  #工具函数检测
+        result = check(reg,val,obj,submitTrigger,self,e,eData)  #工具函数检测
     type = if result.passed then 0 else if !val or obj.is('select') and +val is -1 then 1 else 2
     self.pass(obj,type)
     obj.data('lastVal',val)
@@ -224,8 +225,8 @@ define (require,exports)->
       return true
     tipType = self.getTipType(obj)
     self.settings[name] and $.isFunction(self.settings[name].beforeShowMsg) and self.settings[name].beforeShowMsg(obj,val,{status: (if type then 100 else 0),ajaxCheck:false},self)
-    msg = self.getDisplay(obj,type,'msg') and self.getMsg(obj,type,result.alias,tipType) || ''
-    self.showMsg(obj,msg,type,tipType,submitTrigger)
+    msg = self.getDisplay(obj,type,'msg') and self.getMsg(obj,type,result.alias,tipType,e,eData) || ''
+    self.showMsg(obj,msg,type,tipType,submitTrigger,e,eData)
     return if /1|2/.test(type) and !self.settings.showAllError then false else true
 
   ###自动生成提示信息头###
@@ -258,7 +259,7 @@ define (require,exports)->
       return submit(self)
     ###逐个用check方法检测，便于随时停止检测###
     $('[check]',self.form).each ->
-      self.check($(@),true)
+      self.check($(@),true,{},null)
     unless $("[pass='noPass']",self.form).length
       submit(self)
     else
@@ -272,7 +273,7 @@ define (require,exports)->
       that = $(@)
       that.data('lastVal',null)
       tipType = self.getTipType(that)
-      self.showMsg(that,'',0,tipType,false)
+      self.showMsg(that,'',0,tipType,false,{},null)
     self
   ###检测结果存储###
   Validate::pass = (obj,status)->
@@ -377,7 +378,7 @@ define (require,exports)->
     msg
 
   ###单个检测函数,引入的检测是规则别名，需要进行处理成规则详情###
-  _check = (alias,val,obj,submitTrigger,_v)->
+  _check = (alias,val,obj,submitTrigger,_v,e,eData)->
     if obj.attr('ajaxurl')
       if _v.ajax  #正在提交数据时变更远程验证值，打断远程值
         _v.ajax.abort()
@@ -398,14 +399,14 @@ define (require,exports)->
       alias: rule.alias
 
   ###检测函数###
-  check = (reg,val,obj,submitTrigger,_v)->
+  check = (reg,val,obj,submitTrigger,_v,e,eData)->
     alias = parseReg(reg)
     if $.isArray(alias)
       eithor = 0
       while eithor < alias.length
         dtp = 0
         while dtp < alias[eithor].length
-          checkResult = _check(alias[eithor][dtp],val,obj,submitTrigger,_v) || {}
+          checkResult = _check(alias[eithor][dtp],val,obj,submitTrigger,_v,e,eData) || {}
           break unless checkResult.passed
           dtp++
         break if checkResult.passed
@@ -415,17 +416,17 @@ define (require,exports)->
         rule =
           alias: j
           reg: k
-        checkResult = _check(rule,val,obj,submitTrigger,_v) || {}
+        checkResult = _check(rule,val,obj,submitTrigger,_v,e,eData) || {}
         rule = null
         return false unless checkResult
     else
-      checkResult = _check(alias,val,obj,submitTrigger,_v) || {}
+      checkResult = _check(alias,val,obj,submitTrigger,_v,e,eData) || {}
     if checkResult.passed
-      checkResult.passed = enhanceCheck(obj,val,checkResult.alias,submitTrigger,_v)
+      checkResult.passed = enhanceCheck(obj,val,checkResult.alias,submitTrigger,_v,e,eData)
     return checkResult
 
   ###加强检测 TODO 需要对fe进行检测###
-  enhanceCheck = (obj,val,alias,submitTrigger,_v)->
+  enhanceCheck = (obj,val,alias,submitTrigger,_v,e,eData)->
     if name = obj.attr('rcheck')
       referVal = _v.getVal($('[name="' + name + '"]',_v.form))
       if referVal is val then return true else return false
@@ -437,7 +438,7 @@ define (require,exports)->
       data = {}
       data[name] = val
       if _v.settings[name] and $.isFunction(_v.settings[name].beforeRemoteCheck)  #组装远程调用数组
-        data = _v.settings[name].beforeRemoteCheck(data,_v)
+        data = _v.settings[name].beforeRemoteCheck(data,_v,e,eData)
       _v.ajax = $.ajax(
         url: url
         data: data
@@ -448,17 +449,17 @@ define (require,exports)->
             tipType = if +tipType is 1 then 2 else tipType #强制更改tipType是1
             msg = obj.attr('rinfo') or _v.settings[name].rinfo or _v.settings.rinfo or '检测中……'
             if /^\.[^\.]+/.test(msg)
-              _v.getMsgEle(obj,tipType).addClass(msg.substring(0))
+              _v.getMsgEle(obj,tipType,e,eData).addClass(msg.substring(0))
               msg = _v.settings.rinfo || '检测中……'
-            _v.showMsg(obj,msg,1,tipType,submitTrigger) #TODO 需要增加type类型
+            _v.showMsg(obj,msg,1,tipType,submitTrigger,e,eData) #TODO 需要增加type类型
       ).done (json)->
         data = $.parseJSON(json)
         ###未通过的由服务器做出判断###
         type = if data.status then 2 else 0
         _v.pass(obj,type)
         _v.settings[name] and $.isFunction(_v.settings[name].beforeShowMsg) and _v.settings[name].beforeShowMsg(obj,val,data,_v)
-        _v.getDisplay(obj,type,'msg') and  msg = (if _v.settings[name] and $.isFunction(_v.settings[name].remoteMsg) then _v.settings[name].remoteMsg(obj,type,_v) else data.msg) || _v.getMsg(obj,type,alias,tipType)
-        _v.showMsg(obj,msg || '',type,tipType,submitTrigger)
+        _v.getDisplay(obj,type,'msg') and  msg = (if _v.settings[name] and $.isFunction(_v.settings[name].remoteMsg) then _v.settings[name].remoteMsg(obj,type,_v,e,eData) else data.msg) || _v.getMsg(obj,type,alias,tipType,e,eData)
+        _v.showMsg(obj,msg || '',type,tipType,submitTrigger,e,eData)
         _v.ajaxValidate = null
         if queue.length #提交表单
           queue.shift()
