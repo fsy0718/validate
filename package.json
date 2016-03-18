@@ -1,0 +1,31 @@
+{
+  "name": "validate",
+  "version": "1.0.0",
+  "description": "Based jquery form validation plugin",
+  "main": "dist/validate.js",
+  "directories": {
+    "example": "example"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fsy0718/validate.git"
+  },
+  "keywords": [
+    "jqueryPlugin",
+    "validate"
+  ],
+  "author": "fsy0718 <fsy0718@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/fsy0718/validate/issues"
+  },
+  "homepage": "https://github.com/fsy0718/validate#readme",
+  "devDependencies": {
+    "coffee-loader": "^0.7.2",
+    "coffee-script": "^1.10.0",
+    "webpack": "^1.12.14"
+  }
+}

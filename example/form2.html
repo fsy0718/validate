@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>测试新版validate</title>
+    <link rel="stylesheet" type="text/css" href="./css/style.css"/>
+    <style>
+        .box{
+            margin: 20px auto;
+            width: 50%;
+        }
+    </style>
+</head>
+<body>
+<div class="box">
+    <form class="form" tipType="2">
+        <div class="form-item">
+            <label class="form-label">测试数字</label>
+            <input name="a" check data-rule="digits"/>
+        </div>
+        <div class="form-item">
+            <label class="form-label">测试网址</label>
+            <input name="b" check data-rule="url" shownullicon="true" shownullmsg="false"/>
+        </div>
+        <div class="form-item">
+            <label class="form-label">测试邮箱</label>
+            <input name="c" check data-rule="email" rcheck="b"/>
+        </div>
+        <div class="form-item">
+            <label class="form-label">邮箱或电话</label>
+            <input name="d" check data-rule="email|mobile"/>
+        </div>
+        <div class="form-item">
+            <input type="submit" class="u-btn s-save"/>
+        </div>
+    </form>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.1/jquery.min.js"></script>
+<script src="../dist/validate.js"></script>
+<script>
+    $('.form').validate({
+        showSucc: true
+    })
+</script>
+</body>
+</html>
