@@ -1,0 +1,8 @@
+{
+    "source":{
+        "include": ["./example/js/validate.js"]
+    },
+    "destination": "./jsdoc",
+    "recurse": true,
+    "verbose": true
+}
