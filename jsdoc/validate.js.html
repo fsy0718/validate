@@ -1,4 +1,32 @@
-/******/ (function(modules) { // webpackBootstrap
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: validate.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: validate.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
 
@@ -151,7 +179,7 @@
 	  } else {
 	    val = obj.val();
 	  }
-	  trim && (val = $.trim(val));
+	  trim &amp;&amp; (val = $.trim(val));
 	  return val;
 	};
 
@@ -194,10 +222,10 @@
 	  if (+tipType === 1) {
 	    return true;
 	  }
-	  if (type < 2) {
+	  if (type &lt; 2) {
 	    alias = '';
 	  }
-	  if (type === 2 && (_r = obj.attr('rcheck'))) {
+	  if (type === 2 &amp;&amp; (_r = obj.attr('rcheck'))) {
 	    alias = 'rcheck';
 	    _msgPrefix = 'rcheck';
 	  } else {
@@ -216,7 +244,7 @@
 	        _msg = this.settings[_name][msgKey];
 	      } catch (error1) {
 	        E = error1;
-	        _msg = obj.attr('rcheck') && type === 2 ? '{{label}}两次输入不一致' : buildRule[alias] && buildRule[alias][3 - type];
+	        _msg = obj.attr('rcheck') &amp;&amp; type === 2 ? '{{label}}两次输入不一致' : buildRule[alias] &amp;&amp; buildRule[alias][3 - type];
 	      }
 	    }
 	    _msg || (_msg = msgTip[type]);
@@ -233,7 +261,7 @@
 	  var name;
 	  obj = parseObj(obj, this).eq(0);
 	  name = obj.attr('name');
-	  return obj.attr('tipType') || this.settings[name] && this.settings[name].tipType || this.form.attr('tipType') || this.settings.tipType || 1;
+	  return obj.attr('tipType') || this.settings[name] &amp;&amp; this.settings[name].tipType || this.form.attr('tipType') || this.settings.tipType || 1;
 	};
 
 	Validate.prototype.getMsgEle = function(obj, tipType, e, eData) {
@@ -245,9 +273,9 @@
 	    par = obj.parents('.form-item');
 	    msgPlace = par.find('.input-msg');
 	    if (!msgPlace.length) {
-	      msgPlace = $('<span class="input-msg"/>').appendTo(par);
+	      msgPlace = $('&lt;span class="input-msg"/>').appendTo(par);
 	    }
-	  } else if (tipType && tipType !== 4) {
+	  } else if (tipType &amp;&amp; tipType !== 4) {
 	    msgPlace = $(tipType + ':eq(0)');
 	  }
 	  return msgPlace;
@@ -278,13 +306,13 @@
 	    return this;
 	  } else {
 	    msgPlace = this.getMsgEle(obj, tipType, e, eData);
-	    if (tipType && +tipType !== 1) {
-	      _class = this.getDisplay(obj, type, 'icon') && 'validate-' + msgAttr[type] || '';
-	      !msg && !type && (type = 3);
+	    if (tipType &amp;&amp; +tipType !== 1) {
+	      _class = this.getDisplay(obj, type, 'icon') &amp;&amp; 'validate-' + msgAttr[type] || '';
+	      !msg &amp;&amp; !type &amp;&amp; (type = 3);
 	    }
 	  }
 	  parseTipClass(msgPlace, type, msg);
-	  +tipType !== 1 && msgPlace.css('visibility', (this.settings.checkSubmit && !submitTrigger || !(_class || msg) ? 'hidden' : 'visible')).html(msg).addClass(_class);
+	  +tipType !== 1 &amp;&amp; msgPlace.css('visibility', (this.settings.checkSubmit &amp;&amp; !submitTrigger || !(_class || msg) ? 'hidden' : 'visible')).html(msg).addClass(_class);
 	  return this;
 	};
 
@@ -301,14 +329,14 @@
 	  val = self.getVal(obj, obj.is(':password') ? false : true);
 
 	  /*有ignore标识 值未变化 设置不检测hidden的不用检测 TODO 需要对ignore可以进行配置 */
-	  if (obj.attr('ignore') === 'ignore' && !val || submitTrigger && obj.attr('pass') === 'passed' || !submitTrigger && obj.data('lastVal') === val || obj.is(':hidden') && self.settings.ignoreHidden) {
-	    self.settings.debug && console.log(obj.attr('name') + ' 通过检测;timestamp:' + Date.now());
+	  if (obj.attr('ignore') === 'ignore' &amp;&amp; !val || submitTrigger &amp;&amp; obj.attr('pass') === 'passed' || !submitTrigger &amp;&amp; obj.data('lastVal') === val || obj.is(':hidden') &amp;&amp; self.settings.ignoreHidden) {
+	    self.settings.debug &amp;&amp; console.log(obj.attr('name') + ' 通过检测;timestamp:' + Date.now());
 	    return true;
 	  }
 	  name = obj.attr('name');
 
 	  /*用户自定义检测函数,并且返回检测结果 */
-	  if (self.settings[name] && $.isFunction(self.settings[name]['check'])) {
+	  if (self.settings[name] &amp;&amp; $.isFunction(self.settings[name]['check'])) {
 	    result = self.settings[name]['check'](val, obj, buildRule, submitTrigger, self, e, eData);
 	    val = self.getVal(obj, obj.is(':password') ? false : true);
 	    try {
@@ -320,7 +348,7 @@
 	      };
 	    }
 	  } else {
-	    if (!val || obj.is('select') && +val === -1) {
+	    if (!val || obj.is('select') &amp;&amp; +val === -1) {
 	      result = {
 	        passed: false
 	      };
@@ -329,21 +357,21 @@
 	      result = check(reg, val, obj, submitTrigger, self, e, eData);
 	    }
 	  }
-	  type = result.passed ? 0 : !val || obj.is('select') && +val === -1 ? 1 : 2;
+	  type = result.passed ? 0 : !val || obj.is('select') &amp;&amp; +val === -1 ? 1 : 2;
 	  self.pass(obj, type);
 	  obj.data('lastVal', val);
-	  if (obj.attr('ajaxurl') && !type) {
+	  if (obj.attr('ajaxurl') &amp;&amp; !type) {
 	    enhanceCheck(obj, val, result.alias, submitTrigger, self);
 	    return true;
 	  }
 	  tipType = self.getTipType(obj);
-	  self.settings[name] && $.isFunction(self.settings[name].beforeShowMsg) && self.settings[name].beforeShowMsg(obj, val, {
+	  self.settings[name] &amp;&amp; $.isFunction(self.settings[name].beforeShowMsg) &amp;&amp; self.settings[name].beforeShowMsg(obj, val, {
 	    status: (type ? 100 : 0),
 	    ajaxCheck: false
 	  }, self);
-	  msg = self.getDisplay(obj, type, 'msg') && self.getMsg(obj, type, result.alias, tipType, e, eData) || '';
+	  msg = self.getDisplay(obj, type, 'msg') &amp;&amp; self.getMsg(obj, type, result.alias, tipType, e, eData) || '';
 	  self.showMsg(obj, msg, type, tipType, submitTrigger, e, eData);
-	  if (/1|2/.test(type) && !self.settings.showAllError) {
+	  if (/1|2/.test(type) &amp;&amp; !self.settings.showAllError) {
 	    return false;
 	  } else {
 	    return true;
@@ -369,7 +397,7 @@
 	  obj = parseObj(obj, this);
 	  _icon = 'show' + msgAttr[testType] + type;
 	  name = obj.attr('name');
-	  result = obj.attr(_icon) || this.settings[name] && $.isPlainObject(this.settings[name]) && this.settings[name][_icon];
+	  result = obj.attr(_icon) || this.settings[name] &amp;&amp; $.isPlainObject(this.settings[name]) &amp;&amp; this.settings[name][_icon];
 	  result = result === 'false' ? false : result === void 0 ? this.settings[type + 's'][testType] : result;
 	  return result;
 	};
@@ -380,7 +408,7 @@
 	Validate.prototype.submitForm = function() {
 	  var self;
 	  self = this;
-	  if (self.status === 'posting' || self.settings.postOnce && self.status === 'posted') {
+	  if (self.status === 'posting' || self.settings.postOnce &amp;&amp; self.status === 'posted') {
 	    return false;
 	  } else if (self.ajaxValidate) {
 
@@ -440,7 +468,7 @@
 	/*解析jquery对象 */
 
 	parseObj = function(obj, _v) {
-	  if (obj.jquery && (obj.is(':radio') || obj.is(':checkbox'))) {
+	  if (obj.jquery &amp;&amp; (obj.is(':radio') || obj.is(':checkbox'))) {
 	    obj = obj.attr('name');
 	  }
 	  if (obj.jquery) {
@@ -460,7 +488,7 @@
 	    alias = reg.match(r1);
 	    if (alias) {
 	      _alias = parseAlias(alias[0]);
-	      if (alias.length === 1 && _alias) {
+	      if (alias.length === 1 &amp;&amp; _alias) {
 	        return _alias;
 	      } else if (alias.length > 1) {
 	        sepor = reg.replace(r1, '').replace(/\s*/g, '').split('');
@@ -471,7 +499,7 @@
 	          result[0].push(_alias);
 	        }
 	        n = 0;
-	        while (n < sepor.length) {
+	        while (n &lt; sepor.length) {
 	          if (sepor[n] === '|') {
 	            m++;
 	            result[m] = [];
@@ -498,7 +526,7 @@
 	  var r2, r3;
 	  r2 = /RegExp|Function/;
 	  r3 = /\/.+\//g;
-	  if (r2.test(Object.prototype.toString.call(alias)) || r3.test(alias) || typeof alias === 'string' && buildRule[alias]) {
+	  if (r2.test(Object.prototype.toString.call(alias)) || r3.test(alias) || typeof alias === 'string' &amp;&amp; buildRule[alias]) {
 	    return alias;
 	  }
 	};
@@ -527,7 +555,7 @@
 	    name = obj.attr('name');
 	    rule = {
 	      alias: reg,
-	      reg: _v.settings[name] && _v.settings[name].rule && _v.settings[name].rule[reg] || buildRule[reg] && buildRule[reg][0]
+	      reg: _v.settings[name] &amp;&amp; _v.settings[name].rule &amp;&amp; _v.settings[name].rule[reg] || buildRule[reg] &amp;&amp; buildRule[reg][0]
 	    };
 	  } else {
 	    rule = null;
@@ -599,7 +627,7 @@
 	    } else if (Object.prototype.toString.call(rule.reg) === '[object RegExp]') {
 	      passed = rule.reg.test(val);
 	    }
-	    _v.settings.debug && console[logFn[+passed]](obj.attr('name') + ': 检测规则别名为：' + rule.alias + ';timestamp:' + Date.now());
+	    _v.settings.debug &amp;&amp; console[logFn[+passed]](obj.attr('name') + ': 检测规则别名为：' + rule.alias + ';timestamp:' + Date.now());
 	    return {
 	      passed: passed,
 	      alias: rule.alias
@@ -615,9 +643,9 @@
 	  alias = parseReg(reg);
 	  if ($.isArray(alias)) {
 	    eithor = 0;
-	    while (eithor < alias.length) {
+	    while (eithor &lt; alias.length) {
 	      dtp = 0;
-	      while (dtp < alias[eithor].length) {
+	      while (dtp &lt; alias[eithor].length) {
 	        checkResult = _check(alias[eithor][dtp], val, obj, submitTrigger, _v, e, eData) || {};
 	        if (!checkResult.passed) {
 	          break;
@@ -669,7 +697,7 @@
 	    url = parseUrl(url, 't=' + Math.random());
 	    data = {};
 	    data[name] = val;
-	    if (_v.settings[name] && $.isFunction(_v.settings[name].beforeRemoteCheck)) {
+	    if (_v.settings[name] &amp;&amp; $.isFunction(_v.settings[name].beforeRemoteCheck)) {
 	      data = _v.settings[name].beforeRemoteCheck(data, _v, e, eData);
 	    }
 	    return _v.ajax = $.ajax({
@@ -679,7 +707,7 @@
 	      beforeSend: function() {
 	        var msg;
 	        _v.ajaxValidate = true;
-	        if (obj.attr('showrinfo') || $.isPlainObject(_v.settings[name]) && _v.settings[name].showrinfo || _v.settings.showrinfo) {
+	        if (obj.attr('showrinfo') || $.isPlainObject(_v.settings[name]) &amp;&amp; _v.settings[name].showrinfo || _v.settings.showrinfo) {
 	          tipType = +tipType === 1 ? 2 : tipType;
 	          msg = obj.attr('rinfo') || _v.settings[name].rinfo || _v.settings.rinfo || '检测中……';
 	          if (/^\.[^\.]+/.test(msg)) {
@@ -696,8 +724,8 @@
 	      /*未通过的由服务器做出判断 */
 	      type = data.status ? 2 : 0;
 	      _v.pass(obj, type);
-	      _v.settings[name] && $.isFunction(_v.settings[name].beforeShowMsg) && _v.settings[name].beforeShowMsg(obj, val, data, _v);
-	      _v.getDisplay(obj, type, 'msg') && (msg = (_v.settings[name] && $.isFunction(_v.settings[name].remoteMsg) ? _v.settings[name].remoteMsg(obj, type, _v, e, eData) : data.msg) || _v.getMsg(obj, type, alias, tipType, e, eData));
+	      _v.settings[name] &amp;&amp; $.isFunction(_v.settings[name].beforeShowMsg) &amp;&amp; _v.settings[name].beforeShowMsg(obj, val, data, _v);
+	      _v.getDisplay(obj, type, 'msg') &amp;&amp; (msg = (_v.settings[name] &amp;&amp; $.isFunction(_v.settings[name].remoteMsg) ? _v.settings[name].remoteMsg(obj, type, _v, e, eData) : data.msg) || _v.getMsg(obj, type, alias, tipType, e, eData));
 	      _v.showMsg(obj, msg || '', type, tipType, submitTrigger, e, eData);
 	      _v.ajaxValidate = null;
 	      if (queue.length) {
@@ -728,7 +756,7 @@
 	  if (_v.form[0].tagName.toLocaleLowerCase() === 'form') {
 	    data = _v.form.serializeArray();
 	  } else {
-	    data = _v.form.wrap('<form/>').parent('form').serializeArray();
+	    data = _v.form.wrap('&lt;form/>').parent('form').serializeArray();
 	    _v.form.unWrap();
 	  }
 	  if ($.isFunction(_v.settings.parseData)) {
@@ -744,7 +772,7 @@
 	  var l1, l2;
 	  l1 = url.indexOf('?');
 	  l2 = url.indexOf('#');
-	  arg = l1 > -1 ? '&' : '?' + arg;
+	  arg = l1 > -1 ? '&amp;' : '?' + arg;
 	  if (!(l2 > -1)) {
 	    return url + arg;
 	  } else {
@@ -757,7 +785,7 @@
 
 	submit = function(_v) {
 	  var ajaxType, data;
-	  if ($.isFunction(_v.settings.beforeSubmit) && !_v.settings.beforeSubmit(_v)) {
+	  if ($.isFunction(_v.settings.beforeSubmit) &amp;&amp; !_v.settings.beforeSubmit(_v)) {
 	    return false;
 	  }
 	  _v.changeStatus(1);
@@ -786,7 +814,7 @@
 	        if (_v.settings.showProgressIcon) {
 	          loading = $(_v.settings.showProgressIcon);
 	          if (!loading.length) {
-	            loading = $('<div class="' + _v.settings.showProgressIcon.substring(1) + '"></div>').appendTo(_v.form);
+	            loading = $('&lt;div class="' + _v.settings.showProgressIcon.substring(1) + '">&lt;/div>').appendTo(_v.form);
 	          }
 	          loading.show();
 	        }
@@ -798,27 +826,27 @@
 	          }
 	          _text[_v._isSubmit ? 'val' : 'text'](_v._progressText + '中…').addClass('s-tip');
 	        }
-	        if (typeof _v.settings.beforeSend === 'function' && _v.settings.beforeSend(xhr, config, _v) === false) {
+	        if (typeof _v.settings.beforeSend === 'function' &amp;&amp; _v.settings.beforeSend(xhr, config, _v) === false) {
 	          return false;
 	        }
 	        return true;
 	      }
 	    }).done(function(json, textStatus, xhr) {
-	      _v.settings.showProgressIcon && $(_v.settings.showProgressIcon).hide();
-	      _v.settings.showProgressText && $(_v.settings.showProgressText)[_v._isSubmit ? 'val' : 'text'](_v._progressText).removeClass('s-tip');
-	      return $.isFunction(_v.settings.succFn) && _v.changeStatus(2).settings.succFn(json, textStatus, xhr, _v);
+	      _v.settings.showProgressIcon &amp;&amp; $(_v.settings.showProgressIcon).hide();
+	      _v.settings.showProgressText &amp;&amp; $(_v.settings.showProgressText)[_v._isSubmit ? 'val' : 'text'](_v._progressText).removeClass('s-tip');
+	      return $.isFunction(_v.settings.succFn) &amp;&amp; _v.changeStatus(2).settings.succFn(json, textStatus, xhr, _v);
 	    }).error(function(xhr, textStatus, err) {
-	      _v.settings.showProgressIcon && $(_v.settings.showProgressIcon).hide();
-	      _v.settings.showProgressText && $(_v.settings.showProgressText)[_v._isSubmit ? 'val' : 'text'](_v._progressText).removeClass('s-tip');
+	      _v.settings.showProgressIcon &amp;&amp; $(_v.settings.showProgressIcon).hide();
+	      _v.settings.showProgressText &amp;&amp; $(_v.settings.showProgressText)[_v._isSubmit ? 'val' : 'text'](_v._progressText).removeClass('s-tip');
 	      if (err === 'abort') {
 	        return false;
 	      }
 	      _v.changeStatus(0);
 	      xhr.abort();
-	      return $.isFunction(_v.settings.errFn) && _v.settings.errFn(xhr, textStatus, err, _v);
+	      return $.isFunction(_v.settings.errFn) &amp;&amp; _v.settings.errFn(xhr, textStatus, err, _v);
 	    }).always(function(xhr, textStatus, err) {
 	      _v.ajax = null;
-	      return $.isFunction(_v.settings.alwaysFn) && _v.settings.alwaysFn(xhr, textStatus, err, _v);
+	      return $.isFunction(_v.settings.alwaysFn) &amp;&amp; _v.settings.alwaysFn(xhr, textStatus, err, _v);
 	    });
 	    return false;
 	  }
@@ -842,7 +870,7 @@
 	ele$ = function(options) {
 	  var element;
 	  element = $('aaaa');
-	  if (options.jquery && (options.is(':radio') || options.is(':checkbox'))) {
+	  if (options.jquery &amp;&amp; (options.is(':radio') || options.is(':checkbox'))) {
 	    options = options.attr('name');
 	  }
 	  if (options.jquery) {
@@ -880,7 +908,7 @@
 	};
 
 	Rule.prototype.remove = function(mark) {
-	  if (mark && this[mark]) {
+	  if (mark &amp;&amp; this[mark]) {
 	    return delete this[mark];
 	  } else {
 	    $.each(this, function(i, v) {
@@ -911,7 +939,7 @@
 	    default:
 	      val = $.trim(element.val());
 	      if (tagName === 'select') {
-	        return Boolean(val && +val !== -1);
+	        return Boolean(val &amp;&amp; +val !== -1);
 	      } else {
 	        return Boolean(val);
 	      }
@@ -926,7 +954,7 @@
 
 	rules.add('email', /^\s*([a-zA-Z0-9_\.\-\+])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,20})\s*$/, '{{label}}的格式不正确');
 
-	rules.add('url', /^(http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?$/, '{{label}}的格式不正确');
+	rules.add('url', /^(http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&amp;%@!\-\/]))?$/, '{{label}}的格式不正确');
 
 	rules.add('date', /^\d{4}\-[01]?\d\-[0-3]?\d$|^[01]\d\/[0-3]\d\/\d{4}$|^\d{4}年[01]?\d月[0-3]?\d[日号]$/, '{{label}}的格式不正确');
 
@@ -935,11 +963,11 @@
 	}, '{{label}}必须大于等于{{min}}');
 
 	rules.add('max', function(val, obj) {
-	  return Number(val) <= Number(obj.attr('max'));
+	  return Number(val) &lt;= Number(obj.attr('max'));
 	}, '{{label}}必须小于等于{{max}}');
 
 	rules.add('maxlength', function(val, obj) {
-	  return val.length <= Number(obj.attr('maxlength'));
+	  return val.length &lt;= Number(obj.attr('maxlength'));
 	}, '{{label}}的长度必须不多于{{maxlength}}');
 
 	rules.add('minlength', function(val, obj) {
@@ -973,4 +1001,26 @@
 
 
 /***/ }
-/******/ ]);
+/******/ ]);</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Mar 18 2016 17:19:55 GMT+0800 (中国标准时间)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
