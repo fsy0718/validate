@@ -13,8 +13,20 @@ ele$ = (options)->
     element = $('[name="' + options + '"]')
   element
 
+###* 创建一个Rule
+  * @class
+*###
 Rule = ->
 
+###* 添加一条规则
+ * @memberof Rule
+ * @param {string} mark 规则的名称
+ * @param {(regExp|function)} rule 规则方法或正则
+ * @param {string}  message 未通过规则检测的提示信息,规则中有占位符{{placeholder}}, 内置占位符有label, again, verb, 其余都用元素的属性设置
+ * @param {string} message#{{label}} 当前选择的label
+ * @param {string} message#{{again}}  再次，用于再次输入密码
+ * @param {string} message#{{verb}} 输入或选择，用于复选框单选框 输入框
+*###
 Rule.prototype.add = (mark,rule,message)->
   @[mark] = [rule,message]
 
